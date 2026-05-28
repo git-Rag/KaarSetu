@@ -29,6 +29,11 @@ enum AssessmentStatus {
   MINTED
 }
 
+enum AssessmentInitiator {
+  WORKER
+  ASSESSOR
+}
+
 enum TokenStatus {
   ACTIVE
   REVOKED
@@ -93,22 +98,24 @@ model EmployerProfile {
 }
 
 model Assessment {
-  id                String           @id @default(cuid())
-  workerProfile     WorkerProfile    @relation(fields: [workerProfileId], references: [id])
+  id                String              @id @default(cuid())
+  workerProfile     WorkerProfile       @relation(fields: [workerProfileId], references: [id])
   workerProfileId   String
-  assessorProfile   AssessorProfile  @relation(fields: [assessorProfileId], references: [id])
+  assessorProfile   AssessorProfile     @relation(fields: [assessorProfileId], references: [id])
   assessorProfileId String
   trade             String
   nsqfLevel         NSQFLevel
-  status            AssessmentStatus @default(PENDING)
+  status            AssessmentStatus    @default(PENDING)
+  initiatedBy       AssessmentInitiator @default(ASSESSOR)
+  submittedAt       DateTime?
   score             Int?
   checklistData     Json
   evidenceUrls      String[]
   notes             String?
   assessedAt        DateTime?
   token             SBToken?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 }
 
 model SBToken {

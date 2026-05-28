@@ -5,7 +5,10 @@ import { createMintResult } from '@/lib/mock-chain';
 import { CONTRACT_ADDRESS } from '@/lib/constants';
 import {
   calculatePracticalScore,
+  calculateAssessorScoreFromWorkerChecklist,
   normalizeChecklistData,
+  normalizeWorkerChecklistData,
+  isWorkerChecklistFormat,
   resolveTradeForAssessment,
   isPassingScore,
 } from '@/lib/assessment-scoring';
@@ -56,8 +59,18 @@ export async function POST(
       return NextResponse.json({ error: 'Trade module not found' }, { status: 400 });
     }
 
-    const checklistData = normalizeChecklistData(assessment.checklistData, trade);
-    const score = calculatePracticalScore(checklistData, trade.checklist);
+    const workerFormat =
+      assessment.initiatedBy === 'WORKER' ||
+      isWorkerChecklistFormat(assessment.checklistData);
+    const score = workerFormat
+      ? calculateAssessorScoreFromWorkerChecklist(
+          normalizeWorkerChecklistData(assessment.checklistData, trade),
+          trade.checklist
+        )
+      : calculatePracticalScore(
+          normalizeChecklistData(assessment.checklistData, trade),
+          trade.checklist
+        );
 
     if (!isPassingScore(score, trade)) {
       return NextResponse.json(

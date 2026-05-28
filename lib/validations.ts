@@ -119,3 +119,36 @@ export const workerPatchSchema = z.object({
 export const tokenRevokeSchema = z.object({
   revokeReason: z.string().min(5),
 });
+
+const workerTaskStatusSchema = z.enum(['COMPLETED', 'NEEDS_PRACTICE', 'NOT_ATTEMPTED']);
+
+export const workerTaskEntrySchema = z.object({
+  workerStatus: workerTaskStatusSchema,
+  workerNote: z.string().max(500).optional().default(''),
+  assessorResult: taskResultSchema.nullable().optional(),
+  assessorNote: z.string().max(500).optional().default(''),
+});
+
+export const workerChecklistDataSchema = z.record(workerTaskEntrySchema);
+
+export const workerAttemptCreateSchema = z.object({
+  tradeId: z.enum(['electrician', 'plumber', 'painter']),
+  nsqfLevel: z.enum(['LEVEL_1', 'LEVEL_2', 'LEVEL_3', 'LEVEL_4', 'LEVEL_5']).optional(),
+});
+
+export const workerAttemptPatchSchema = z.object({
+  checklistData: workerChecklistDataSchema.optional(),
+  evidenceUrls: z.array(z.string()).optional(),
+  notes: z.string().max(2000).optional(),
+});
+
+export const workerAttemptSubmitSchema = z.object({
+  assessorProfileId: z.string().optional(),
+  autoAssign: z.boolean().optional(),
+});
+
+export const assessorWorkerReviewSchema = z.object({
+  checklistData: workerChecklistDataSchema,
+  notes: z.string().max(2000).optional(),
+  finalize: z.boolean().optional(),
+});

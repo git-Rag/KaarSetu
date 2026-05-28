@@ -4,7 +4,10 @@ import { requireRole } from '@/lib/auth';
 import { assessmentPatchSchema } from '@/lib/validations';
 import {
   calculatePracticalScore,
+  calculateAssessorScoreFromWorkerChecklist,
   normalizeChecklistData,
+  normalizeWorkerChecklistData,
+  isWorkerChecklistFormat,
   resolveTradeForAssessment,
   validateChecklistData,
   isPassingScore,
@@ -52,17 +55,30 @@ export async function GET(
     }
 
     const trade = resolveTradeForAssessment(assessment.trade);
+    const workerFormat =
+      assessment.initiatedBy === 'WORKER' ||
+      (trade && isWorkerChecklistFormat(assessment.checklistData));
+
     const checklistData = trade
-      ? normalizeChecklistData(assessment.checklistData, trade)
+      ? workerFormat
+        ? normalizeWorkerChecklistData(assessment.checklistData, trade)
+        : normalizeChecklistData(assessment.checklistData, trade)
       : assessment.checklistData;
+
+    const score = trade
+      ? workerFormat
+        ? calculateAssessorScoreFromWorkerChecklist(
+            checklistData as ReturnType<typeof normalizeWorkerChecklistData>,
+            trade.checklist
+          )
+        : calculatePracticalScore(checklistData as ChecklistData, trade.checklist)
+      : assessment.score;
 
     return NextResponse.json({
       data: {
         ...assessment,
         checklistData,
-        score: trade
-          ? calculatePracticalScore(checklistData as ChecklistData, trade.checklist)
-          : assessment.score,
+        score,
       },
     });
   } catch {

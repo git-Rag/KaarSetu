@@ -2,13 +2,35 @@ import type { Trade, TradeChecklist } from '@/lib/trades';
 import { TRADE_MAP, getTradeByName } from '@/lib/trades';
 
 export type TaskResultValue = 'PASS' | 'PARTIAL' | 'FAIL';
+export type WorkerTaskStatus = 'COMPLETED' | 'NEEDS_PRACTICE' | 'NOT_ATTEMPTED';
 
+/** Assessor-led practical checklist (direct assessment). */
 export interface TaskAssessment {
   result: TaskResultValue;
   note?: string;
 }
 
 export type ChecklistData = Record<string, TaskAssessment>;
+
+/** Worker self-attempt + assessor review on same record. */
+export interface WorkerTaskEntry {
+  workerStatus: WorkerTaskStatus;
+  workerNote: string;
+  assessorResult: TaskResultValue | null;
+  assessorNote: string;
+}
+
+export type WorkerChecklistData = Record<string, WorkerTaskEntry>;
+
+export function isWorkerChecklistFormat(raw: unknown): boolean {
+  if (!raw || typeof raw !== 'object') return false;
+  const first = Object.values(raw as Record<string, unknown>)[0];
+  return (
+    !!first &&
+    typeof first === 'object' &&
+    'workerStatus' in (first as object)
+  );
+}
 
 export function createEmptyChecklist(trade: Trade): ChecklistData {
   const data: ChecklistData = {};
@@ -18,11 +40,28 @@ export function createEmptyChecklist(trade: Trade): ChecklistData {
   return data;
 }
 
-/** Normalize legacy boolean checklist JSON from older seeds. */
+export function createEmptyWorkerChecklist(trade: Trade): WorkerChecklistData {
+  const data: WorkerChecklistData = {};
+  for (const task of trade.checklist) {
+    data[task.id] = {
+      workerStatus: 'NOT_ATTEMPTED',
+      workerNote: '',
+      assessorResult: null,
+      assessorNote: '',
+    };
+  }
+  return data;
+}
+
+/** Normalize legacy boolean or assessor-only JSON. */
 export function normalizeChecklistData(
   raw: unknown,
   trade: Trade
 ): ChecklistData {
+  if (isWorkerChecklistFormat(raw)) {
+    return workerChecklistToAssessorFormat(normalizeWorkerChecklistData(raw, trade), trade);
+  }
+
   if (!raw || typeof raw !== 'object') {
     return createEmptyChecklist(trade);
   }
@@ -60,24 +99,117 @@ export function normalizeChecklistData(
   return data;
 }
 
+export function normalizeWorkerChecklistData(
+  raw: unknown,
+  trade: Trade
+): WorkerChecklistData {
+  if (!raw || typeof raw !== 'object') {
+    return createEmptyWorkerChecklist(trade);
+  }
+
+  const obj = raw as Record<string, unknown>;
+
+  if (!isWorkerChecklistFormat(raw)) {
+    const assessor = normalizeChecklistData(raw, trade);
+    const data = createEmptyWorkerChecklist(trade);
+    for (const task of trade.checklist) {
+      const a = assessor[task.id];
+      if (a) {
+        data[task.id] = {
+          workerStatus: 'COMPLETED',
+          workerNote: '',
+          assessorResult: a.result,
+          assessorNote: a.note ?? '',
+        };
+      }
+    }
+    return data;
+  }
+
+  const validWorker: WorkerTaskStatus[] = ['COMPLETED', 'NEEDS_PRACTICE', 'NOT_ATTEMPTED'];
+  const validAssessor: (TaskResultValue | null)[] = ['PASS', 'PARTIAL', 'FAIL', null];
+  const data: WorkerChecklistData = {};
+
+  for (const task of trade.checklist) {
+    const entry = obj[task.id];
+    if (entry && typeof entry === 'object') {
+      const e = entry as Partial<WorkerTaskEntry>;
+      const ws = e.workerStatus;
+      const ar = e.assessorResult ?? null;
+      data[task.id] = {
+        workerStatus: validWorker.includes(ws as WorkerTaskStatus)
+          ? (ws as WorkerTaskStatus)
+          : 'NOT_ATTEMPTED',
+        workerNote: e.workerNote ?? '',
+        assessorResult: validAssessor.includes(ar as TaskResultValue | null)
+          ? (ar as TaskResultValue | null)
+          : null,
+        assessorNote: e.assessorNote ?? '',
+      };
+    } else {
+      data[task.id] = {
+        workerStatus: 'NOT_ATTEMPTED',
+        workerNote: '',
+        assessorResult: null,
+        assessorNote: '',
+      };
+    }
+  }
+  return data;
+}
+
+export function workerChecklistToAssessorFormat(
+  workerData: WorkerChecklistData,
+  trade: Trade
+): ChecklistData {
+  const data: ChecklistData = {};
+  for (const task of trade.checklist) {
+    const entry = workerData[task.id];
+    const result = entry?.assessorResult ?? 'FAIL';
+    data[task.id] = { result, note: entry?.assessorNote ?? '' };
+  }
+  return data;
+}
+
+/** Score from assessor marks only — never workerStatus. */
 export function calculatePracticalScore(
-  checklistData: ChecklistData,
-  tasks: TradeChecklist[]
+  checklistData: ChecklistData | WorkerChecklistData,
+  tasks: TradeChecklist[],
+  options?: { workerFormat?: boolean }
 ): number {
+  const workerFormat =
+    options?.workerFormat ?? isWorkerChecklistFormat(checklistData);
+
   let totalWeight = 0;
   let earned = 0;
 
   for (const task of tasks) {
     const weight = task.isRequired ? 2 : 1;
     totalWeight += weight;
-    const entry = checklistData[task.id];
-    if (!entry) continue;
-    if (entry.result === 'PASS') earned += weight;
-    else if (entry.result === 'PARTIAL') earned += weight * 0.5;
+
+    if (workerFormat) {
+      const entry = (checklistData as WorkerChecklistData)[task.id];
+      const result = entry?.assessorResult;
+      if (!result) continue;
+      if (result === 'PASS') earned += weight;
+      else if (result === 'PARTIAL') earned += weight * 0.5;
+    } else {
+      const entry = (checklistData as ChecklistData)[task.id];
+      if (!entry) continue;
+      if (entry.result === 'PASS') earned += weight;
+      else if (entry.result === 'PARTIAL') earned += weight * 0.5;
+    }
   }
 
   if (totalWeight === 0) return 0;
   return Math.round((earned / totalWeight) * 100);
+}
+
+export function calculateAssessorScoreFromWorkerChecklist(
+  workerData: WorkerChecklistData,
+  tasks: TradeChecklist[]
+): number {
+  return calculatePracticalScore(workerData, tasks, { workerFormat: true });
 }
 
 export function countTaskResults(checklistData: ChecklistData) {
@@ -120,14 +252,60 @@ export function validateChecklistData(
 
   if (requireRequiredMarked) {
     for (const task of trade.checklist.filter((t) => t.isRequired)) {
-      const entry = checklistData[task.id];
-      if (!entry) {
+      if (!checklistData[task.id]) {
         return { valid: false, error: `Required task not assessed: ${task.label}` };
       }
     }
   }
 
   return { valid: true };
+}
+
+const workerStatusSchema = ['COMPLETED', 'NEEDS_PRACTICE', 'NOT_ATTEMPTED'] as const;
+
+export function validateWorkerChecklistData(
+  checklistData: WorkerChecklistData,
+  trade: Trade,
+  options: { requireAllTasks?: boolean } = {}
+): { valid: boolean; error?: string } {
+  for (const key of Object.keys(checklistData)) {
+    if (!trade.checklist.some((t) => t.id === key)) {
+      return { valid: false, error: `Invalid task ID: ${key}` };
+    }
+    const entry = checklistData[key];
+    if (!workerStatusSchema.includes(entry.workerStatus)) {
+      return { valid: false, error: `Invalid worker status for ${key}` };
+    }
+    if (
+      entry.assessorResult !== null &&
+      !['PASS', 'PARTIAL', 'FAIL'].includes(entry.assessorResult)
+    ) {
+      return { valid: false, error: `Invalid assessor result for ${key}` };
+    }
+  }
+
+  if (options.requireAllTasks) {
+    for (const task of trade.checklist) {
+      if (!checklistData[task.id]) {
+        return { valid: false, error: `Missing task: ${task.label}` };
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
+export function validateWorkerReviewChecklist(
+  checklistData: WorkerChecklistData,
+  trade: Trade
+): { valid: boolean; error?: string } {
+  for (const task of trade.checklist) {
+    const entry = checklistData[task.id];
+    if (!entry?.assessorResult) {
+      return { valid: false, error: `Assessor must score: ${task.label}` };
+    }
+  }
+  return validateWorkerChecklistData(checklistData, trade, { requireAllTasks: true });
 }
 
 export function isPassingScore(score: number, trade: Trade): boolean {
@@ -138,7 +316,6 @@ export function resolveTradeForAssessment(tradeKeyOrName: string): Trade | undef
   return TRADE_MAP[tradeKeyOrName] ?? getTradeByName(tradeKeyOrName);
 }
 
-/** Build seed checklist from per-task results. */
 export function buildSeedChecklist(
   trade: Trade,
   marks: Record<string, TaskResultValue>
@@ -146,6 +323,23 @@ export function buildSeedChecklist(
   const data = createEmptyChecklist(trade);
   for (const [id, result] of Object.entries(marks)) {
     if (data[id]) data[id] = { result, note: '' };
+  }
+  return data;
+}
+
+export function buildSeedWorkerChecklist(
+  trade: Trade,
+  workerMarks: Record<string, WorkerTaskStatus>,
+  assessorMarks: Record<string, TaskResultValue>
+): WorkerChecklistData {
+  const data = createEmptyWorkerChecklist(trade);
+  for (const task of trade.checklist) {
+    if (workerMarks[task.id]) {
+      data[task.id].workerStatus = workerMarks[task.id];
+    }
+    if (assessorMarks[task.id]) {
+      data[task.id].assessorResult = assessorMarks[task.id];
+    }
   }
   return data;
 }

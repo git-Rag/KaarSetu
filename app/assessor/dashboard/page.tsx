@@ -41,11 +41,31 @@ export default async function AssessorDashboardPage() {
     );
   }
 
+  const workerSubmissions = await prisma.assessment.findMany({
+    where: {
+      assessorProfileId: assessor.id,
+      initiatedBy: 'WORKER',
+      submittedAt: { not: null },
+      status: 'PENDING',
+    },
+    include: {
+      workerProfile: {
+        include: { user: { select: { name: true } } },
+      },
+    },
+    orderBy: { submittedAt: 'desc' },
+    take: 10,
+  });
+
   const total = assessor.assessments.length;
   const minted = assessor.assessments.filter((a) => a.status === 'MINTED').length;
-  const pending = assessor.assessments.filter((a) => a.status === 'PENDING').length;
+  const pending = assessor.assessments.filter(
+    (a) => a.status === 'PENDING' && a.initiatedBy === 'ASSESSOR'
+  ).length;
   const passed = assessor.assessments.filter((a) => a.status === 'PASSED').length;
-  const recent = assessor.assessments.slice(0, 5);
+  const recent = assessor.assessments
+    .filter((a) => a.initiatedBy === 'ASSESSOR')
+    .slice(0, 5);
 
   return (
     <div className="space-y-8">
@@ -91,6 +111,37 @@ export default async function AssessorDashboardPage() {
           </Button>
         </Link>
       </div>
+
+      <section>
+        <h2 className="mb-4 font-display text-lg font-bold text-cream">
+          Worker submitted attempts
+        </h2>
+        {workerSubmissions.length === 0 ? (
+          <Card className="text-center text-text-secondary">
+            <p>No worker submissions awaiting review.</p>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {workerSubmissions.map((s) => (
+              <Card key={s.id} className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium text-cream">{s.workerProfile.user.name}</p>
+                  <p className="text-sm text-text-secondary">
+                    {s.trade} • {s.evidenceUrls.length} evidence file(s) •{' '}
+                    {s.submittedAt ? formatDate(s.submittedAt) : '—'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge variant="amber">Pending Review</Badge>
+                  <Link href={`/assessor/review/${s.id}`}>
+                    <Button size="sm">Review Attempt</Button>
+                  </Link>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section>
         <h2 className="mb-4 font-display text-lg font-bold text-cream">Recent assessments</h2>

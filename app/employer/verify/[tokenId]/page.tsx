@@ -156,10 +156,10 @@ export default function EmployerVerifyTokenPage() {
   const normalized = trade
     ? normalizeChecklistData(data.token.checklistData, trade)
     : {};
-  const passedCount = checklist.filter(
-    (item) =>
-      normalized[item.id]?.result === 'PASS' || normalized[item.id]?.result === 'PARTIAL'
-  ).length;
+  const passedCount = checklist.filter((item) => {
+    const entry = normalized[item.id] as { result?: string };
+    return entry?.result === 'PASS' || entry?.result === 'PARTIAL';
+  }).length;
   const totalCount = checklist.length || 8;
 
   return (
@@ -235,7 +235,8 @@ export default function EmployerVerifyTokenPage() {
         </CardHeader>
         <ul className="space-y-2">
           {checklist.map((item) => {
-            const result = normalized[item.id]?.result;
+            const entry = normalized[item.id] as { result?: string };
+            const result = entry?.result;
             const passed = result === 'PASS';
             const partial = result === 'PARTIAL';
             return (

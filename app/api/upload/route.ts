@@ -11,6 +11,41 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4'];
 const MAX_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 5;
 
+async function canUploadToAssessment(
+  assessmentId: string,
+  userId: string,
+  role: string
+): Promise<{ ok: boolean; error?: string }> {
+  const assessment = await prisma.assessment.findUnique({
+    where: { id: assessmentId },
+    include: { workerProfile: true },
+  });
+  if (!assessment) return { ok: false, error: 'Assessment not found' };
+
+  if (role === 'ASSESSOR') {
+    const assessor = await prisma.assessorProfile.findUnique({ where: { userId } });
+    if (assessor?.id !== assessment.assessorProfileId) {
+      return { ok: false, error: 'Forbidden' };
+    }
+    return { ok: true };
+  }
+
+  if (role === 'WORKER') {
+    if (assessment.workerProfile.userId !== userId) {
+      return { ok: false, error: 'Forbidden' };
+    }
+    if (assessment.initiatedBy !== 'WORKER') {
+      return { ok: false, error: 'Forbidden' };
+    }
+    if (assessment.submittedAt) {
+      return { ok: false, error: 'Cannot upload after submission' };
+    }
+    return { ok: true };
+  }
+
+  return { ok: false, error: 'Forbidden' };
+}
+
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
@@ -19,16 +54,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Too many uploads' }, { status: 429 });
     }
 
-    const authCheck = await requireRole(['ASSESSOR']);
+    const authCheck = await requireRole(['ASSESSOR', 'WORKER']);
     if (authCheck.error || !authCheck.session) {
-      return NextResponse.json({ error: authCheck.error }, { status: 401 });
-    }
-
-    const assessor = await prisma.assessorProfile.findUnique({
-      where: { userId: authCheck.session.user.id },
-    });
-    if (!assessor) {
-      return NextResponse.json({ error: 'Assessor profile not found' }, { status: 404 });
+      return NextResponse.json({ error: authCheck.error ?? 'Unauthorized' }, { status: 401 });
     }
 
     const formData = await request.formData();
@@ -37,14 +65,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'assessmentId required' }, { status: 400 });
     }
 
+    const access = await canUploadToAssessment(
+      assessmentId,
+      authCheck.session.user.id,
+      authCheck.session.user.role
+    );
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: 403 });
+    }
+
     const assessment = await prisma.assessment.findUnique({
       where: { id: assessmentId },
     });
     if (!assessment) {
       return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
-    }
-    if (assessment.assessorProfileId !== assessor.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const existingCount = assessment.evidenceUrls.length;

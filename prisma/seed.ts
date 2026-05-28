@@ -3,8 +3,11 @@ import bcrypt from 'bcryptjs';
 import { TRADE_MAP } from '../lib/trades';
 import {
   buildSeedChecklist,
+  buildSeedWorkerChecklist,
   calculatePracticalScore,
+  calculateAssessorScoreFromWorkerChecklist,
   type TaskResultValue,
+  type WorkerTaskStatus,
 } from '../lib/assessment-scoring';
 
 const prisma = new PrismaClient();
@@ -13,10 +16,20 @@ async function hash(password: string) {
   return bcrypt.hash(password, 12);
 }
 
-function scoreFor(tradeId: string, marks: Record<string, TaskResultValue>) {
+function assessorScore(tradeId: string, marks: Record<string, TaskResultValue>) {
   const trade = TRADE_MAP[tradeId];
   const data = buildSeedChecklist(trade, marks);
   return calculatePracticalScore(data, trade.checklist);
+}
+
+function workerAssessorScore(
+  tradeId: string,
+  workerMarks: Record<string, WorkerTaskStatus>,
+  assessorMarks: Record<string, TaskResultValue>
+) {
+  const trade = TRADE_MAP[tradeId];
+  const data = buildSeedWorkerChecklist(trade, workerMarks, assessorMarks);
+  return calculateAssessorScoreFromWorkerChecklist(data, trade.checklist);
 }
 
 async function main() {
@@ -49,7 +62,6 @@ async function main() {
       role: 'ASSESSOR',
       walletAddress: '0x7f3a2b8c9d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7',
       aadhaarVerified: true,
-      aadhaarLast4: '4521',
       assessorProfile: {
         create: {
           itiName: 'ITI Bhopal',
@@ -194,6 +206,20 @@ async function main() {
     include: { workerProfile: true },
   });
 
+  await prisma.user.create({
+    data: {
+      name: 'Amit Sharma',
+      phone: '9876540006',
+      passwordHash: await hash('Worker@123'),
+      role: 'WORKER',
+      walletAddress: '0x5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e',
+      aadhaarVerified: true,
+      workerProfile: {
+        create: { trade: 'Plumber', state: 'Madhya Pradesh', city: 'Bhopal' },
+      },
+    },
+  });
+
   const assessor1 = assessor1User.assessorProfile!;
 
   const electricianMarks: Record<string, TaskResultValue> = {
@@ -207,20 +233,7 @@ async function main() {
     e8: 'PASS',
   };
   const electricianChecklist = buildSeedChecklist(TRADE_MAP.electrician, electricianMarks);
-  const electricianScore = scoreFor('electrician', electricianMarks);
-
-  const painterMarks: Record<string, TaskResultValue> = {
-    pt1: 'PASS',
-    pt2: 'PASS',
-    pt3: 'PASS',
-    pt4: 'PASS',
-    pt5: 'PASS',
-    pt6: 'PASS',
-    pt7: 'PASS',
-    pt8: 'PARTIAL',
-  };
-  const painterChecklist = buildSeedChecklist(TRADE_MAP.painter, painterMarks);
-  const painterScore = scoreFor('painter', painterMarks);
+  const electricianScore = assessorScore('electrician', electricianMarks);
 
   const plumberMarks: Record<string, TaskResultValue> = {
     p1: 'PASS',
@@ -233,9 +246,46 @@ async function main() {
     p8: 'PASS',
   };
   const plumberChecklist = buildSeedChecklist(TRADE_MAP.plumber, plumberMarks);
-  const plumberScore = scoreFor('plumber', plumberMarks);
+  const plumberScore = assessorScore('plumber', plumberMarks);
 
-  const kiranFailMarks: Record<string, TaskResultValue> = {
+  const anitaWorkerMarks: Record<string, WorkerTaskStatus> = {
+    pt1: 'COMPLETED',
+    pt2: 'COMPLETED',
+    pt3: 'COMPLETED',
+    pt4: 'COMPLETED',
+    pt5: 'COMPLETED',
+    pt6: 'COMPLETED',
+    pt7: 'COMPLETED',
+    pt8: 'COMPLETED',
+  };
+  const anitaAssessorMarks: Record<string, TaskResultValue> = {
+    pt1: 'PASS',
+    pt2: 'PASS',
+    pt3: 'PASS',
+    pt4: 'PASS',
+    pt5: 'PASS',
+    pt6: 'PASS',
+    pt7: 'PASS',
+    pt8: 'PARTIAL',
+  };
+  const anitaChecklist = buildSeedWorkerChecklist(
+    TRADE_MAP.painter,
+    anitaWorkerMarks,
+    anitaAssessorMarks
+  );
+  const anitaScore = workerAssessorScore('painter', anitaWorkerMarks, anitaAssessorMarks);
+
+  const kiranWorkerMarks: Record<string, WorkerTaskStatus> = {
+    e1: 'COMPLETED',
+    e2: 'NEEDS_PRACTICE',
+    e3: 'NOT_ATTEMPTED',
+    e4: 'NEEDS_PRACTICE',
+    e5: 'COMPLETED',
+    e6: 'NOT_ATTEMPTED',
+    e7: 'NOT_ATTEMPTED',
+    e8: 'COMPLETED',
+  };
+  const kiranAssessorMarks: Record<string, TaskResultValue> = {
     e1: 'PASS',
     e2: 'PARTIAL',
     e3: 'FAIL',
@@ -245,8 +295,12 @@ async function main() {
     e7: 'FAIL',
     e8: 'PASS',
   };
-  const kiranFailChecklist = buildSeedChecklist(TRADE_MAP.electrician, kiranFailMarks);
-  const kiranFailScore = scoreFor('electrician', kiranFailMarks);
+  const kiranChecklist = buildSeedWorkerChecklist(
+    TRADE_MAP.electrician,
+    kiranWorkerMarks,
+    kiranAssessorMarks
+  );
+  const kiranScore = workerAssessorScore('electrician', kiranWorkerMarks, kiranAssessorMarks);
 
   await prisma.assessment.create({
     data: {
@@ -255,11 +309,30 @@ async function main() {
       trade: 'Painter',
       nsqfLevel: 'LEVEL_2' as NSQFLevel,
       status: 'PASSED',
-      score: painterScore,
-      checklistData: painterChecklist as unknown as Prisma.InputJsonValue,
+      initiatedBy: 'WORKER',
+      submittedAt: new Date('2026-05-28T10:00:00'),
+      score: anitaScore,
+      checklistData: anitaChecklist as unknown as Prisma.InputJsonValue,
       evidenceUrls: [],
-      notes: 'Excellent surface prep and roller technique. Ready for SBT minting.',
-      assessedAt: new Date('2026-05-28'),
+      notes: 'Excellent surface prep and finish. Ready for SBT minting.',
+      assessedAt: new Date('2026-05-28T14:00:00'),
+    },
+  });
+
+  await prisma.assessment.create({
+    data: {
+      workerProfileId: kiran.workerProfile!.id,
+      assessorProfileId: assessor1.id,
+      trade: 'Electrician',
+      nsqfLevel: 'LEVEL_2',
+      status: 'FAILED',
+      initiatedBy: 'WORKER',
+      submittedAt: new Date('2026-05-25T09:00:00'),
+      score: kiranScore,
+      checklistData: kiranChecklist as unknown as Prisma.InputJsonValue,
+      evidenceUrls: [],
+      notes: 'Failed switchboard wiring and fault detection. Retrain before re-attempt.',
+      assessedAt: new Date('2026-05-26T11:00:00'),
     },
   });
 
@@ -270,10 +343,11 @@ async function main() {
       trade: 'Electrician',
       nsqfLevel: 'LEVEL_2',
       status: 'MINTED',
+      initiatedBy: 'ASSESSOR',
       score: electricianScore,
       checklistData: electricianChecklist as unknown as Prisma.InputJsonValue,
       evidenceUrls: [],
-      notes: 'Solid domestic wiring practical.',
+      notes: 'Assessor-led practical — solid domestic wiring.',
       assessedAt: new Date('2026-05-14'),
     },
   });
@@ -300,6 +374,7 @@ async function main() {
       trade: 'Plumber',
       nsqfLevel: 'LEVEL_2',
       status: 'MINTED',
+      initiatedBy: 'ASSESSOR',
       score: plumberScore,
       checklistData: plumberChecklist as unknown as Prisma.InputJsonValue,
       evidenceUrls: [],
@@ -322,21 +397,6 @@ async function main() {
     },
   });
 
-  await prisma.assessment.create({
-    data: {
-      workerProfileId: kiran.workerProfile!.id,
-      assessorProfileId: assessor1.id,
-      trade: 'Electrician',
-      nsqfLevel: 'LEVEL_2',
-      status: 'FAILED',
-      score: kiranFailScore,
-      checklistData: kiranFailChecklist as unknown as Prisma.InputJsonValue,
-      evidenceUrls: [],
-      notes: 'Failed switchboard wiring and fault detection tasks. Recommend retraining.',
-      assessedAt: new Date('2026-05-25'),
-    },
-  });
-
   const token1042 = await prisma.sBToken.findUnique({ where: { tokenId: '1042' } });
   if (token1042 && employer1.employerProfile) {
     await prisma.attestation.create({
@@ -356,10 +416,10 @@ async function main() {
   }
 
   console.log('Seed complete:', {
-    painterAnita: { score: painterScore, phone: anita.phone },
-    electricianRamesh: { token: '1042', score: electricianScore },
-    plumberSuresh: { token: '1045', score: plumberScore },
-    failedKiran: { score: kiranFailScore, phone: kiran.phone },
+    anitaPainterPassed: { phone: '9876540004', score: anitaScore },
+    kiranElectricianFailed: { phone: '9876540005', score: kiranScore },
+    freshWorker: '9876540006',
+    tokens: ['1042', '1045'],
   });
 }
 

@@ -14,6 +14,7 @@ import {
   Users,
   LogOut,
   Shield,
+  FlaskConical,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Role } from '@prisma/client';
@@ -24,6 +25,7 @@ const NAV_ITEMS: Record<
 > = {
   WORKER: [
     { href: '/worker/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/worker/tests', label: 'Skill Tests', icon: FlaskConical },
     { href: '/worker/credentials', label: 'Credentials', icon: Award },
     { href: '/worker/profile', label: 'Profile', icon: User },
     { href: '/worker/jobs', label: 'Jobs', icon: Briefcase },

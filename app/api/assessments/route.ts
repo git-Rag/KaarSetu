@@ -44,6 +44,7 @@ export async function POST(request: Request) {
         nsqfLevel: parsed.data.nsqfLevel,
         checklistData: checklistData as unknown as Prisma.InputJsonValue,
         evidenceUrls: [],
+        initiatedBy: 'ASSESSOR',
       },
     });
 
