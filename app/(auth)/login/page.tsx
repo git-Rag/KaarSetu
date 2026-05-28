@@ -13,9 +13,13 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
+import { useTranslation } from '@/lib/i18n/use-translation';
+import { LanguageSwitcher } from '@/components/language-switcher';
+
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const {
@@ -52,34 +56,37 @@ export default function LoginPage() {
 
   return (
     <Card>
-      <Link href="/" className="font-display text-xl font-bold text-saffron">
-        KaarSetu
-      </Link>
-      <h1 className="mt-6 font-display text-2xl font-bold text-cream">Welcome back</h1>
-      <p className="mt-1 text-sm text-text-secondary">Sign in to your account</p>
+      <div className="flex items-center justify-between">
+        <Link href="/" className="font-display text-xl font-bold text-saffron">
+          KaarSetu
+        </Link>
+        <LanguageSwitcher />
+      </div>
+      <h1 className="mt-6 font-display text-2xl font-bold text-cream">{t('auth.login.title')}</h1>
+      <p className="mt-1 text-sm text-text-secondary">{t('auth.login.subtitle')}</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">
         <Input
-          label="Phone Number"
+          label={t('auth.login.phoneLabel')}
           placeholder="9876543210"
           {...register('phone')}
           error={errors.phone?.message}
         />
         <Input
-          label="Password"
+          label={t('auth.login.passwordLabel')}
           type="password"
           {...register('password')}
           error={errors.password?.message}
         />
         <Button type="submit" className="w-full" loading={loading}>
-          Sign In
+          {t('auth.login.button')}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-text-secondary">
-        Don&apos;t have an account?{' '}
+        {t('auth.login.noAccount')}{' '}
         <Link href="/register" className="text-saffron hover:underline">
-          Register
+          {t('common.register')}
         </Link>
       </p>
 

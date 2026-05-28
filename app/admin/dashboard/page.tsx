@@ -23,6 +23,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 
+import { useTranslation } from '@/lib/i18n/use-translation';
+
 interface StatsData {
   kpis: {
     totalWorkers: number;
@@ -49,6 +51,7 @@ interface StatsData {
 const PIE_COLORS = ['#00BFA5', '#EF5350', '#FFB300'];
 
 export default function AdminDashboardPage() {
+  const { t } = useTranslation();
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -126,37 +129,37 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-3xl font-bold text-cream">Admin Dashboard</h1>
-        <p className="mt-1 text-text-secondary">Platform overview and assessor approvals</p>
+        <h1 className="font-display text-3xl font-bold text-cream">{t('admin.dashboard.title')}</h1>
+        <p className="mt-1 text-text-secondary">{t('admin.dashboard.subtitle')}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <p className="text-sm text-text-secondary">Total Workers</p>
+          <p className="text-sm text-text-secondary">{t('admin.dashboard.kpis.totalWorkers')}</p>
           <p className="mt-2 font-display text-3xl font-bold text-saffron">
             {data.kpis.totalWorkers}
           </p>
         </Card>
         <Card>
-          <p className="text-sm text-text-secondary">Assessors</p>
+          <p className="text-sm text-text-secondary">{t('admin.dashboard.kpis.assessors')}</p>
           <p className="mt-2 font-display text-3xl font-bold text-cream">
             {data.kpis.approvedAssessors}
             <span className="text-lg text-text-muted"> / {data.kpis.totalAssessors}</span>
           </p>
           {data.kpis.pendingAssessors > 0 && (
             <Badge variant="amber" className="mt-2">
-              {data.kpis.pendingAssessors} pending
+              {data.kpis.pendingAssessors} {t('admin.dashboard.kpis.pending')}
             </Badge>
           )}
         </Card>
         <Card>
-          <p className="text-sm text-text-secondary">Employers</p>
+          <p className="text-sm text-text-secondary">{t('admin.dashboard.kpis.employers')}</p>
           <p className="mt-2 font-display text-3xl font-bold text-indigo">
             {data.kpis.totalEmployers}
           </p>
         </Card>
         <Card>
-          <p className="text-sm text-text-secondary">SBTs Minted</p>
+          <p className="text-sm text-text-secondary">{t('admin.dashboard.kpis.totalTokens')}</p>
           <p className="mt-2 font-display text-3xl font-bold text-teal">
             {data.kpis.totalTokens}
           </p>
@@ -166,7 +169,7 @@ export default function AdminDashboardPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>SBTs Minted (Last 30 Days)</CardTitle>
+            <CardTitle>{t('admin.dashboard.charts.mints')}</CardTitle>
           </CardHeader>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -195,7 +198,7 @@ export default function AdminDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Credentials by Trade</CardTitle>
+            <CardTitle>{t('admin.dashboard.charts.trades')}</CardTitle>
           </CardHeader>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -226,7 +229,7 @@ export default function AdminDashboardPage() {
 
       <Card className="max-w-md">
         <CardHeader>
-          <CardTitle>Credential Status</CardTitle>
+          <CardTitle>{t('admin.dashboard.charts.status')}</CardTitle>
         </CardHeader>
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
@@ -259,22 +262,22 @@ export default function AdminDashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Assessor Approvals</CardTitle>
+          <CardTitle>{t('admin.dashboard.table.pendingAssessors')}</CardTitle>
         </CardHeader>
         {data.pendingAssessors.length === 0 ? (
-          <p className="text-sm text-text-secondary">No pending assessor registrations.</p>
+          <p className="text-sm text-text-secondary p-4">{t('admin.dashboard.table.noPending')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-border text-text-muted">
-                  <th className="pb-3 pr-4 font-medium">Name</th>
-                  <th className="pb-3 pr-4 font-medium">ITI</th>
-                  <th className="pb-3 pr-4 font-medium">Code</th>
-                  <th className="pb-3 pr-4 font-medium">District</th>
-                  <th className="pb-3 pr-4 font-medium">State</th>
-                  <th className="pb-3 pr-4 font-medium">Registered</th>
-                  <th className="pb-3 font-medium">Actions</th>
+                  <th className="pb-3 pr-4 font-medium">{t('admin.dashboard.table.name')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('admin.dashboard.table.iti')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('admin.dashboard.table.code')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('admin.dashboard.table.district')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('admin.dashboard.table.state')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('admin.dashboard.table.registered')}</th>
+                  <th className="pb-3 font-medium">{t('admin.dashboard.table.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -295,7 +298,7 @@ export default function AdminDashboardPage() {
                           loading={actionId === a.id}
                           onClick={() => handleAssessorAction(a.id, 'approve')}
                         >
-                          Approve
+                          {t('admin.dashboard.table.approve')}
                         </Button>
                         <Button
                           size="sm"
@@ -303,7 +306,7 @@ export default function AdminDashboardPage() {
                           disabled={actionId === a.id}
                           onClick={() => handleAssessorAction(a.id, 'reject')}
                         >
-                          Reject
+                          {t('admin.dashboard.table.reject')}
                         </Button>
                       </div>
                     </td>

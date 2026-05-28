@@ -27,7 +27,10 @@ function sleep(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
 }
 
+import { useTranslation } from '@/lib/i18n/use-translation';
+
 export default function AssessorReviewPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const assessmentId = params.assessmentId as string;
@@ -53,9 +56,9 @@ export default function AssessorReviewPage() {
       .then((json) => {
         if (!json.data) return;
         setAssessment(json.data);
-        const t = resolveTradeForAssessment(json.data.trade);
-        if (t) {
-          setChecklist(normalizeWorkerChecklistData(json.data.checklistData, t));
+        const t_obj = resolveTradeForAssessment(json.data.trade);
+        if (t_obj) {
+          setChecklist(normalizeWorkerChecklistData(json.data.checklistData, t_obj));
         }
         setNotes(json.data.notes ?? '');
       })
@@ -120,7 +123,7 @@ export default function AssessorReviewPage() {
       <Card>
         <p>Submission not found.</p>
         <Link href="/assessor/dashboard">
-          <Button className="mt-4">Back</Button>
+          <Button className="mt-4">{t('common.back')}</Button>
         </Link>
       </Card>
     );
@@ -156,7 +159,7 @@ export default function AssessorReviewPage() {
     <div className="space-y-6">
       <Link href="/assessor/dashboard">
         <Button variant="ghost" size="sm">
-          <ArrowLeft className="h-4 w-4" /> Dashboard
+          <ArrowLeft className="h-4 w-4" /> {t('common.dashboard')}
         </Button>
       </Link>
 
@@ -167,7 +170,7 @@ export default function AssessorReviewPage() {
           </Badge>
           <h1 className="font-display text-2xl font-bold text-cream">{worker.user.name}</h1>
           <p className="text-text-secondary">
-            {trade.testTitle} • Submitted{' '}
+            {t(`trades.${trade.id}.testTitle`)} • Submitted{' '}
             {assessment.submittedAt
               ? formatDate(assessment.submittedAt as string)
               : '—'}
@@ -207,14 +210,14 @@ export default function AssessorReviewPage() {
         <CardHeader>
           <CardTitle>Assessor scoring</CardTitle>
           <p className="text-sm text-text-secondary">
-            Mark Pass/Partial/Fail based on observed evidence — not worker self-report.
+            {t('assessor.review.scoreDisclaimer')}
           </p>
         </CardHeader>
         <AssessorReviewChecklist trade={trade} value={checklist} onChange={setChecklist} />
         <textarea
           className="mt-4 w-full rounded-lg border border-border bg-surface-raised p-3 text-cream"
           rows={3}
-          placeholder="Overall assessor feedback..."
+          placeholder={t('assessor.review.assessorFeedback')}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />

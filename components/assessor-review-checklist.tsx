@@ -22,7 +22,17 @@ interface AssessorReviewChecklistProps {
   onChange: (value: WorkerChecklistData) => void;
 }
 
+import { useTranslation } from '@/lib/i18n/use-translation';
+
 export function AssessorReviewChecklist({ trade, value, onChange }: AssessorReviewChecklistProps) {
+  const { t } = useTranslation();
+  
+  const RESULT_OPTIONS: { value: TaskResultValue; label: string }[] = [
+    { value: 'PASS', label: t('common.next') === 'आगे' ? 'पास' : 'Pass' },
+    { value: 'PARTIAL', label: t('common.next') === 'आगे' ? 'आंशिक' : 'Partial' },
+    { value: 'FAIL', label: t('common.next') === 'आगे' ? 'विफल' : 'Fail' },
+  ];
+
   const score = calculateAssessorScoreFromWorkerChecklist(value, trade.checklist);
   const passEligible = isPassingScore(score, trade);
 
@@ -56,7 +66,7 @@ export function AssessorReviewChecklist({ trade, value, onChange }: AssessorRevi
         </div>
         <Progress value={score} max={100} className="mt-2" />
         <p className="mt-2 text-xs text-text-muted">
-          Score is calculated from your Pass/Partial/Fail marks only — not worker self-report.
+          {t('assessor.review.scoreDisclaimer')}
         </p>
       </div>
 
@@ -64,20 +74,23 @@ export function AssessorReviewChecklist({ trade, value, onChange }: AssessorRevi
         {trade.checklist.map((item) => {
           const entry = value[item.id];
           const result = entry?.assessorResult;
+          
+          const localizedLabel = t(`trades.${trade.id}.tasks.${item.id}.label`);
+
           return (
             <li key={item.id} className="rounded-xl border border-border bg-surface-card p-4">
-              <p className="font-medium text-cream">{item.label}</p>
+              <p className="font-medium text-cream">{localizedLabel}</p>
               <div className="mt-2 rounded-lg bg-surface-raised p-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <p className="text-text-muted">Worker self-report</p>
+                  <p className="text-text-muted">{t('assessor.review.workerReport')}</p>
                   {entry?.isVoice && (
                     <Badge variant="saffron" className="h-5 px-1.5 text-[10px]">
-                      Voice Assisted
+                      {t('assessor.review.voiceAssisted')}
                     </Badge>
                   )}
                 </div>
                 <p className="text-cream">
-                  {entry?.workerStatus?.replace(/_/g, ' ') ?? '—'}
+                  {entry?.workerStatus ? t(`common.${entry.workerStatus.toLowerCase() as any}`) : '—'}
                   {entry?.workerNote ? ` — "${entry.workerNote}"` : ''}
                 </p>
               </div>
@@ -105,7 +118,7 @@ export function AssessorReviewChecklist({ trade, value, onChange }: AssessorRevi
               <textarea
                 className="mt-2 w-full rounded-lg border border-border bg-surface-raised p-2 text-sm text-cream"
                 rows={2}
-                placeholder="Assessor feedback for this task..."
+                placeholder={t('assessor.review.assessorFeedback')}
                 value={entry?.assessorNote ?? ''}
                 onChange={(e) => setAssessorNote(item.id, e.target.value)}
               />

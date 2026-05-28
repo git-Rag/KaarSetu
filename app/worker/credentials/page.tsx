@@ -31,7 +31,10 @@ interface TokenRow {
   };
 }
 
+import { useTranslation } from '@/lib/i18n/use-translation';
+
 export default function WorkerCredentialsPage() {
+  const { t } = useTranslation();
   const [tokens, setTokens] = useState<TokenRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [tradeFilter, setTradeFilter] = useState('all');
@@ -65,7 +68,7 @@ export default function WorkerCredentialsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold text-cream">My Credentials</h1>
+        <h1 className="font-display text-2xl font-bold text-cream">{t('nav.credentials')}</h1>
         <p className="mt-1 text-text-secondary">
           Soulbound skill tokens minted on Polygon — non-transferable, verifiable anywhere.
         </p>
@@ -78,12 +81,12 @@ export default function WorkerCredentialsPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
         <Select
-          label="Trade"
+          label={t('common.trade')}
           value={tradeFilter}
           onChange={(e) => setTradeFilter(e.target.value)}
-          options={trades.map((t) => ({
-            value: t,
-            label: t === 'all' ? 'All trades' : t,
+          options={trades.map((tr) => ({
+            value: tr,
+            label: tr === 'all' ? (t('common.next') === 'आगे' ? 'सभी ट्रेड' : 'All trades') : tr,
           }))}
         />
         <Select
@@ -91,8 +94,8 @@ export default function WorkerCredentialsPage() {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           options={[
-            { value: 'all', label: 'All statuses' },
-            { value: 'ACTIVE', label: 'Active' },
+            { value: 'all', label: t('common.next') === 'आगे' ? 'सभी' : 'All statuses' },
+            { value: 'ACTIVE', label: t('common.active') },
             { value: 'REVOKED', label: 'Revoked' },
           ]}
         />
@@ -109,7 +112,7 @@ export default function WorkerCredentialsPage() {
           title="No credentials yet"
           description="Get assessed by an ITI-certified assessor to mint your first on-chain skill credential."
           icon={<WorkerEmptyCredentialsIcon />}
-          action={{ label: 'View dashboard', href: '/worker/dashboard' }}
+          action={{ label: t('common.dashboard'), href: '/worker/dashboard' }}
         />
       ) : (
         <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">

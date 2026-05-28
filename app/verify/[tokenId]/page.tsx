@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { truncateHash, truncateAddress } from '@/lib/utils';
 import type { NSQFLevel } from '@prisma/client';
+import { useTranslation } from '@/lib/i18n/use-translation';
 
 interface TokenResponse {
   token: {
@@ -46,6 +47,7 @@ interface TokenResponse {
 }
 
 export default function PublicVerifyPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const tokenId = String(params.tokenId);
   const [data, setData] = useState<TokenResponse | null>(null);
@@ -77,7 +79,7 @@ export default function PublicVerifyPage() {
           <Link href="/" className="font-display text-2xl font-bold text-saffron">
             KaarSetu
           </Link>
-          <p className="mt-2 text-sm text-text-secondary">Credential Verification</p>
+          <p className="mt-2 text-sm text-text-secondary">{t('credential.verified')}</p>
         </div>
 
         {loading ? (
@@ -89,7 +91,7 @@ export default function PublicVerifyPage() {
             <p className="text-text-secondary">Credential not found</p>
             <p className="mt-2 text-sm text-text-muted">Token #{tokenId} does not exist or was revoked.</p>
             <Link href="/" className="mt-6 inline-block">
-              <Button variant="outline">Back to Home</Button>
+              <Button variant="outline">{t('common.back')}</Button>
             </Link>
           </Card>
         ) : (
@@ -98,13 +100,13 @@ export default function PublicVerifyPage() {
               <div className="flex items-center justify-center gap-2 rounded-xl border border-teal/40 bg-teal/10 py-4 text-teal">
                 <CheckCircle2 className="h-8 w-8" />
                 <div className="text-left">
-                  <p className="font-display text-lg font-bold">VERIFIED</p>
+                  <p className="font-display text-lg font-bold uppercase">{t('credential.verified')}</p>
                   <p className="text-xs opacity-80">Active soulbound credential</p>
                 </div>
               </div>
             ) : (
               <div className="flex items-center justify-center gap-2 rounded-xl border border-red-err/40 bg-red-err/10 py-4 text-red-err">
-                <p className="font-display text-lg font-bold">REVOKED</p>
+                <p className="font-display text-lg font-bold uppercase">REVOKED</p>
               </div>
             )}
 
@@ -149,7 +151,7 @@ export default function PublicVerifyPage() {
                 </div>
               )}
               <Button variant="outline" size="sm" className="w-full" onClick={() => setScanOpen(true)}>
-                View on Polygonscan
+                {t('credential.viewOnPolygon')}
               </Button>
             </Card>
 

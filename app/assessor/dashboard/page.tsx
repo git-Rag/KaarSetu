@@ -9,7 +9,10 @@ import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
 import { ClipboardCheck, ChevronRight } from 'lucide-react';
 
+import { getServerTranslation } from '@/lib/i18n/server';
+
 export default async function AssessorDashboardPage() {
+  const { t } = getServerTranslation();
   const session = await auth();
   if (!session?.user) redirect('/login');
 
@@ -33,7 +36,7 @@ export default async function AssessorDashboardPage() {
   if (!assessor) {
     return (
       <div>
-        <h1 className="font-display text-2xl font-bold text-cream">Assessor Dashboard</h1>
+        <h1 className="font-display text-2xl font-bold text-cream">{t('nav.assessor')}</h1>
         <Card className="mt-4">
           <p className="text-text-secondary">Assessor profile not found.</p>
         </Card>
@@ -71,7 +74,7 @@ export default async function AssessorDashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-2xl font-bold text-cream">
-          Welcome, {assessor.user.name.split(' ')[0]}
+          {t('worker.dashboard.welcome', { name: assessor.user.name.split(' ')[0] ?? '' })}
         </h1>
         <p className="mt-1 text-text-secondary">
           {assessor.itiName} • {assessor.district}, {assessor.state}
@@ -107,7 +110,7 @@ export default async function AssessorDashboardPage() {
         </Link>
         <Link href="/assessor/history">
           <Button variant="outline">
-            View history <ChevronRight className="h-4 w-4" />
+            {t('nav.history')} <ChevronRight className="h-4 w-4" />
           </Button>
         </Link>
       </div>
@@ -132,7 +135,7 @@ export default async function AssessorDashboardPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge variant="amber">Pending Review</Badge>
+                  <Badge variant="amber">{t('common.pending')}</Badge>
                   <Link href={`/assessor/review/${s.id}`}>
                     <Button size="sm">Review Attempt</Button>
                   </Link>

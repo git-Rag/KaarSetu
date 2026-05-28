@@ -18,12 +18,22 @@ interface WorkerAttemptChecklistProps {
   readOnly?: boolean;
 }
 
+import { useTranslation } from '@/lib/i18n/use-translation';
+
 export function WorkerAttemptChecklist({
   trade,
   value,
   onChange,
   readOnly,
 }: WorkerAttemptChecklistProps) {
+  const { t } = useTranslation();
+
+  const STATUS_OPTIONS: { value: WorkerTaskStatus; label: string }[] = [
+    { value: 'COMPLETED', label: t('common.completed') },
+    { value: 'NEEDS_PRACTICE', label: t('common.next') === 'आगे' ? 'अभ्यास की आवश्यकता' : 'Needs Practice' },
+    { value: 'NOT_ATTEMPTED', label: t('common.next') === 'आगे' ? 'कोशिश नहीं की' : 'Not Attempted' },
+  ];
+
   const setStatus = (taskId: string, workerStatus: WorkerTaskStatus) => {
     onChange({
       ...value,
@@ -49,6 +59,10 @@ export function WorkerAttemptChecklist({
       {trade.checklist.map((item, index) => {
         const entry = value[item.id];
         const status = entry?.workerStatus ?? 'NOT_ATTEMPTED';
+        
+        const localizedLabel = t(`trades.${trade.id}.tasks.${item.id}.label`);
+        const localizedDesc = t(`trades.${trade.id}.tasks.${item.id}.desc`);
+
         return (
           <li
             key={item.id}
@@ -62,8 +76,8 @@ export function WorkerAttemptChecklist({
               <span className="text-xs text-text-muted">Task {index + 1}</span>
               {item.isRequired && <Badge variant="red">Required</Badge>}
             </div>
-            <p className="mt-1 font-medium text-cream">{item.label}</p>
-            <p className="mt-1 text-sm text-text-secondary">{item.description}</p>
+            <p className="mt-1 font-medium text-cream">{localizedLabel}</p>
+            <p className="mt-1 text-sm text-text-secondary">{localizedDesc}</p>
             {!readOnly && (
               <>
                 <div className="mt-3 flex flex-wrap gap-1">
@@ -98,7 +112,7 @@ export function WorkerAttemptChecklist({
             )}
             {readOnly && entry && (
               <p className="mt-2 text-sm text-text-secondary">
-                Self-report: <span className="text-cream">{status.replace(/_/g, ' ')}</span>
+                {t('assessor.review.workerReport')}: <span className="text-cream">{t(`common.${status.toLowerCase() as any}`)}</span>
                 {entry.workerNote && ` — ${entry.workerNote}`}
               </p>
             )}

@@ -19,32 +19,37 @@ import {
 import { cn } from '@/lib/utils';
 import type { Role } from '@prisma/client';
 
-const NAV_ITEMS: Record<
-  Role,
-  { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[]
-> = {
-  WORKER: [
-    { href: '/worker/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/worker/tests', label: 'Skill Tests', icon: FlaskConical },
-    { href: '/worker/credentials', label: 'Credentials', icon: Award },
-    { href: '/worker/profile', label: 'Profile', icon: User },
-    { href: '/worker/jobs', label: 'Jobs', icon: Briefcase },
-  ],
-  ASSESSOR: [
-    { href: '/assessor/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/assessor/assess', label: 'Assess', icon: ClipboardCheck },
-    { href: '/assessor/history', label: 'History', icon: History },
-  ],
-  EMPLOYER: [
-    { href: '/employer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/employer/verify', label: 'Verify', icon: ScanLine },
-    { href: '/employer/workers', label: 'Workers', icon: Users },
-  ],
-  ADMIN: [{ href: '/admin/dashboard', label: 'Dashboard', icon: Shield }],
-};
+import { useTranslation } from '@/lib/i18n/use-translation';
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 export function SidebarNav({ role }: { role: Role }) {
+  const { t } = useTranslation();
   const pathname = usePathname();
+
+  const NAV_ITEMS: Record<
+    Role,
+    { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[]
+  > = {
+    WORKER: [
+      { href: '/worker/dashboard', label: t('common.dashboard'), icon: LayoutDashboard },
+      { href: '/worker/tests', label: t('nav.skillTests'), icon: FlaskConical },
+      { href: '/worker/credentials', label: t('nav.credentials'), icon: Award },
+      { href: '/worker/profile', label: t('common.profile'), icon: User },
+      { href: '/worker/jobs', label: t('nav.jobs'), icon: Briefcase },
+    ],
+    ASSESSOR: [
+      { href: '/assessor/dashboard', label: t('common.dashboard'), icon: LayoutDashboard },
+      { href: '/assessor/assess', label: t('nav.assess'), icon: ClipboardCheck },
+      { href: '/assessor/history', label: t('nav.history'), icon: History },
+    ],
+    EMPLOYER: [
+      { href: '/employer/dashboard', label: t('common.dashboard'), icon: LayoutDashboard },
+      { href: '/employer/verify', label: t('common.verify'), icon: ScanLine },
+      { href: '/employer/workers', label: t('nav.workers'), icon: Users },
+    ],
+    ADMIN: [{ href: '/admin/dashboard', label: t('common.dashboard'), icon: Shield }],
+  };
+
   const items = NAV_ITEMS[role] ?? [];
 
   return (
@@ -53,7 +58,9 @@ export function SidebarNav({ role }: { role: Role }) {
         <Link href="/" className="font-display text-xl font-bold text-saffron">
           KaarSetu
         </Link>
-        <p className="mt-1 text-xs text-text-secondary capitalize">{role.toLowerCase()} portal</p>
+        <p className="mt-1 text-xs text-text-secondary capitalize">
+          {t(`nav.${role.toLowerCase() as any}`)}
+        </p>
       </div>
       <nav className="flex-1 space-y-1 p-4">
         {items.map((item) => {
@@ -76,14 +83,15 @@ export function SidebarNav({ role }: { role: Role }) {
           );
         })}
       </nav>
-      <div className="border-t border-border p-4">
+      <div className="space-y-4 border-t border-border p-4">
+        <LanguageSwitcher />
         <button
           type="button"
           onClick={() => signOut({ callbackUrl: '/' })}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-text-secondary transition-all duration-200 hover:bg-surface-hover hover:text-cream"
         >
           <LogOut className="h-4 w-4" />
-          Sign out
+          {t('common.signOut')}
         </button>
       </div>
     </aside>

@@ -19,7 +19,10 @@ interface RecentVerification {
   attested: boolean;
 }
 
+import { useTranslation } from '@/lib/i18n/use-translation';
+
 export default function EmployerDashboardPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [recent, setRecent] = useState<RecentVerification[]>([]);
   const [quickTokenId, setQuickTokenId] = useState('');
@@ -58,7 +61,7 @@ export default function EmployerDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-3xl font-bold text-cream">Employer Dashboard</h1>
+        <h1 className="font-display text-3xl font-bold text-cream">{t('employer.dashboard.title')}</h1>
         <p className="mt-1 text-text-secondary">Verify credentials and attest work history</p>
       </div>
 
@@ -116,12 +119,12 @@ export default function EmployerDashboardPage() {
             onKeyDown={(e) => e.key === 'Enter' && quickVerify()}
             className="flex-1"
           />
-          <Button onClick={quickVerify}>Verify</Button>
+          <Button onClick={quickVerify}>{t('common.verify')}</Button>
         </div>
       </Card>
 
       <div>
-        <h2 className="font-display text-lg font-bold text-cream">Recent Verifications</h2>
+        <h2 className="font-display text-lg font-bold text-cream">{t('employer.dashboard.recentAttestations')}</h2>
         {recent.length === 0 ? (
           <Card className="mt-4 text-center text-text-secondary">
             <p>No verifications yet. Scan a worker&apos;s QR code to get started.</p>

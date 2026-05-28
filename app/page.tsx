@@ -16,6 +16,8 @@ import { CredentialCard } from '@/components/credential-card';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { TRADES } from '@/lib/trades';
+import { useTranslation } from '@/lib/i18n/use-translation';
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 const DEMO_CREDENTIAL = {
   token: {
@@ -99,6 +101,53 @@ const ROLES = [
 ];
 
 export default function LandingPage() {
+  const { t } = useTranslation();
+
+  const STEPS = [
+    {
+      num: '01',
+      title: t('landing.howItWorks.steps.assess.title'),
+      color: 'text-teal border-teal/40 bg-teal/10',
+      desc: t('landing.howItWorks.steps.assess.desc'),
+    },
+    {
+      num: '02',
+      title: t('landing.howItWorks.steps.mint.title'),
+      color: 'text-saffron border-saffron/40 bg-saffron/10',
+      desc: t('landing.howItWorks.steps.mint.desc'),
+    },
+    {
+      num: '03',
+      title: t('landing.howItWorks.steps.attest.title'),
+      color: 'text-indigo border-indigo/40 bg-indigo/10',
+      desc: t('landing.howItWorks.steps.attest.desc'),
+    },
+  ];
+
+  const ROLES = [
+    {
+      role: 'WORKER',
+      title: t('landing.ctaFooter.roles.worker.title'),
+      desc: t('landing.ctaFooter.roles.worker.desc'),
+      href: '/register?role=WORKER',
+      accent: 'border-saffron/40 hover:border-saffron hover:shadow-[0_0_30px_rgba(255,107,0,0.12)]',
+    },
+    {
+      role: 'ASSESSOR',
+      title: t('landing.ctaFooter.roles.assessor.title'),
+      desc: t('landing.ctaFooter.roles.assessor.desc'),
+      href: '/register?role=ASSESSOR',
+      accent: 'border-teal/40 hover:border-teal hover:shadow-[0_0_30px_rgba(0,191,165,0.12)]',
+    },
+    {
+      role: 'EMPLOYER',
+      title: t('landing.ctaFooter.roles.employer.title'),
+      desc: t('landing.ctaFooter.roles.employer.desc'),
+      href: '/register?role=EMPLOYER',
+      accent: 'border-indigo/40 hover:border-indigo hover:shadow-[0_0_30px_rgba(92,107,192,0.12)]',
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-surface-base">
       <header className="fixed top-0 z-50 w-full border-b border-border bg-surface-base/80 backdrop-blur-md">
@@ -107,19 +156,20 @@ export default function LandingPage() {
             KaarSetu
           </Link>
           <nav className="flex items-center gap-4">
+            <LanguageSwitcher className="hidden md:flex" />
             <Link
               href="/verify/1042"
               className="text-sm text-text-secondary transition-colors hover:text-cream"
             >
-              Verify
+              {t('common.verify')}
             </Link>
             <Link href="/login">
               <Button variant="ghost" size="sm">
-                Sign In
+                {t('common.signIn')}
               </Button>
             </Link>
             <Link href="/register">
-              <Button size="sm">Get Started</Button>
+              <Button size="sm">{t('common.getStarted')}</Button>
             </Link>
           </nav>
         </div>
@@ -135,9 +185,9 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
             className="max-w-4xl font-display text-5xl font-extrabold leading-tight text-cream md:text-7xl"
           >
-            Every Skilled Hand
+            {t('landing.hero.title1')}
             <br />
-            <span className="text-saffron">Deserves Proof.</span>
+            <span className="text-saffron">{t('landing.hero.title2')}</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -145,8 +195,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="mt-6 max-w-2xl text-lg text-text-secondary md:text-xl"
           >
-            KaarSetu bridges India&apos;s 450 million informal workers to the formal economy —
-            one verified credential at a time.
+            {t('landing.hero.subtitle')}
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -155,12 +204,12 @@ export default function LandingPage() {
             className="mt-10 flex flex-wrap gap-4"
           >
             <Link href="/register?role=WORKER">
-              <Button size="lg">Get Certified</Button>
+              <Button size="lg">{t('landing.hero.ctaPrimary')}</Button>
             </Link>
             <Link href="/verify/1042">
               <Button size="lg" variant="outline">
                 <ScanLine className="h-4 w-4" />
-                Verify a Credential
+                {t('landing.hero.ctaSecondary')}
               </Button>
             </Link>
           </motion.div>
@@ -171,10 +220,10 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.35 }}
             className="mt-20 grid grid-cols-2 gap-8 border-t border-border pt-12 md:grid-cols-4"
           >
-            <StatsCounter value={450} suffix="M" label="Informal Workers in India" />
-            <StatsCounter value={50} suffix="%" prefix="40–" label="Wage Premium Unlocked" numeric={false} />
-            <StatsCounter value={0.001} prefix="₹" label="Cost to Mint" numeric={false} />
-            <StatsCounter value={3} suffix="s" label="Verification Time" numeric={false} />
+            <StatsCounter value={450} suffix="M" label={t('landing.stats.workers')} />
+            <StatsCounter value={50} suffix="%" prefix="40–" label={t('landing.stats.premium')} numeric={false} />
+            <StatsCounter value={0.001} prefix="₹" label={t('landing.stats.cost')} numeric={false} />
+            <StatsCounter value={3} suffix="s" label={t('landing.stats.time')} numeric={false} />
           </motion.div>
         </div>
       </section>
@@ -183,39 +232,35 @@ export default function LandingPage() {
       <section className="border-t border-border px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <h2 className="text-center font-display text-3xl font-bold text-cream md:text-4xl">
-            The Trust Gap Costing India Crores
+            {t('landing.problem.title')}
           </h2>
           <div className="mt-12 grid gap-6 md:grid-cols-2">
             <Card className="border-saffron/30 bg-surface-card">
               <div className="mb-4 flex items-center gap-2 text-saffron">
                 <Users className="h-5 w-5" />
                 <span className="font-display text-sm font-bold uppercase tracking-wide">
-                  Worker Pain
+                  {t('landing.problem.workerPain')}
                 </span>
               </div>
-              <ul className="space-y-4">
-                {WORKER_PAIN.map((item) => (
-                  <li key={item} className="flex gap-3 text-sm text-text-secondary">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-saffron" />
-                    {item}
-                  </li>
-                ))}
+              <ul className="space-y-4 text-text-secondary">
+                <li className="flex gap-3 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-saffron" />No portable proof of skills across cities</li>
+                <li className="flex gap-3 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-saffron" />Fake certificates accepted everywhere</li>
+                <li className="flex gap-3 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-saffron" />Wages stuck at unskilled rates</li>
+                <li className="flex gap-3 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-saffron" />Lost paperwork when migrating for work</li>
               </ul>
             </Card>
             <Card className="border-red-err/30 bg-surface-card">
               <div className="mb-4 flex items-center gap-2 text-red-err">
                 <Building2 className="h-5 w-5" />
                 <span className="font-display text-sm font-bold uppercase tracking-wide">
-                  Contractor Pain
+                  {t('landing.problem.contractorPain')}
                 </span>
               </div>
-              <ul className="space-y-4">
-                {CONTRACTOR_PAIN.map((item) => (
-                  <li key={item} className="flex gap-3 text-sm text-text-secondary">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-err" />
-                    {item}
-                  </li>
-                ))}
+              <ul className="space-y-4 text-text-secondary">
+                <li className="flex gap-3 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-err" />Cannot verify worker skills on-site</li>
+                <li className="flex gap-3 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-err" />High cost of failed hires and rework</li>
+                <li className="flex gap-3 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-err" />No trusted record of past projects</li>
+                <li className="flex gap-3 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-err" />Compliance risk on government contracts</li>
               </ul>
             </Card>
           </div>
@@ -225,7 +270,9 @@ export default function LandingPage() {
       {/* How it works */}
       <section className="border-t border-border bg-surface-card/50 px-6 py-24">
         <div className="mx-auto max-w-6xl">
-          <h2 className="text-center font-display text-3xl font-bold text-cream">How It Works</h2>
+          <h2 className="text-center font-display text-3xl font-bold text-cream">
+            {t('landing.howItWorks.title')}
+          </h2>
           <div className="mt-12 flex flex-col items-stretch gap-6 md:flex-row md:items-center">
             {STEPS.map((step, i) => (
               <div key={step.num} className="flex flex-1 items-center gap-4">
@@ -246,9 +293,11 @@ export default function LandingPage() {
       {/* Credential preview */}
       <section className="border-t border-border px-6 py-24">
         <div className="mx-auto max-w-6xl text-center">
-          <h2 className="font-display text-3xl font-bold text-cream">Your Skill, On-Chain</h2>
+          <h2 className="font-display text-3xl font-bold text-cream">
+            {t('landing.credentialPreview.title')}
+          </h2>
           <p className="mt-4 text-text-secondary">
-            This is what 450M workers could carry with them forever.
+            {t('landing.credentialPreview.subtitle')}
           </p>
           <div className="mt-12 flex justify-center">
             <CredentialCard
@@ -265,10 +314,10 @@ export default function LandingPage() {
       <section className="border-t border-border bg-surface-card/30 px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <h2 className="text-center font-display text-3xl font-bold text-cream">
-            Trade Coverage
+            {t('landing.trades.title')}
           </h2>
           <p className="mt-4 text-center text-text-secondary">
-            NSQF-aligned assessments across India&apos;s most in-demand trades
+            {t('landing.trades.subtitle')}
           </p>
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {TRADES.map((trade) => (
@@ -293,9 +342,9 @@ export default function LandingPage() {
       <section className="border-t border-border px-6 py-24">
         <div className="mx-auto max-w-6xl text-center">
           <h2 className="font-display text-3xl font-bold text-cream md:text-4xl">
-            Start with 500 electricians.
+            {t('landing.ctaFooter.title1')}
             <br />
-            <span className="text-saffron">Change everything.</span>
+            <span className="text-saffron">{t('landing.ctaFooter.title2')}</span>
           </h2>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {ROLES.map((r) => (
@@ -307,7 +356,7 @@ export default function LandingPage() {
                   <h3 className="mt-4 font-display text-lg font-bold text-cream">{r.title}</h3>
                   <p className="mt-2 text-sm text-text-secondary">{r.desc}</p>
                   <span className="mt-4 inline-flex items-center gap-1 text-sm text-saffron">
-                    Register <ArrowRight className="h-4 w-4" />
+                    {t('common.register')} <ArrowRight className="h-4 w-4" />
                   </span>
                 </Card>
               </Link>
@@ -317,8 +366,8 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t border-border px-6 py-8 text-center text-sm text-text-muted">
-        <p>KaarSetu — Skill Credentials for India&apos;s Workers</p>
-        <p className="mt-1">Built for LNCT Hackathon • Polygon Amoy Testnet (simulated)</p>
+        <p>{t('landing.footer.tagline')}</p>
+        <p className="mt-1">{t('landing.footer.builtFor')}</p>
       </footer>
     </div>
   );

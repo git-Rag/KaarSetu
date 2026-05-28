@@ -6,6 +6,7 @@ export interface AIWorkerAnswerInput {
   taskLabel: string;
   taskDescription: string;
   transcript: string;
+  uiLanguage?: 'en' | 'hi';
 }
 
 export interface AIWorkerAnswerOutput {
@@ -25,10 +26,13 @@ Rules:
    - COMPLETED: If the worker clearly describes finishing the task successfully.
    - NEEDS_PRACTICE: If the worker struggled, expressed confusion, or didn't finish.
    - NOT_ATTEMPTED: If the transcript is empty or says they didn't do it.
-2. cleanNote: Create a professional summary in English. Preserve technical terms. Do not exaggerate.
-3. missingEvidence: Suggest what photos or videos are missing based on the task.
+2. cleanNote: Create a professional summary. 
+   - If UI language is 'hi', provide the summary in natural Hindi/Hinglish.
+   - If UI language is 'en', provide it in professional English.
+   - Preserve technical terms in English characters if they are commonly used (e.g., "MCB", "leakage", "primer").
+3. missingEvidence: Suggest what photos or videos are missing based on the task (in UI language).
 4. confidence: HIGH if the transcript is clear, MEDIUM if somewhat vague, LOW if very unclear.
-5. safetyFlags: List any safety concerns mentioned or missing (e.g., "Not wearing gloves").
+5. safetyFlags: List any safety concerns mentioned or missing (in UI language).
 6. Respond ONLY with a JSON object.
 
 Input format:
@@ -36,7 +40,8 @@ Input format:
   "trade": "string",
   "task": "string",
   "description": "string",
-  "transcript": "string"
+  "transcript": "string",
+  "uiLanguage": "en" | "hi"
 }
 
 Output format:
@@ -62,6 +67,7 @@ export async function structureWorkerAnswer(
       task: input.taskLabel,
       description: input.taskDescription,
       transcript: input.transcript,
+      uiLanguage: input.uiLanguage || 'en',
     });
 
     const result = await chatCompletion(SYSTEM_PROMPT, userPrompt);

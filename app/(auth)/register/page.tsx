@@ -17,20 +17,25 @@ import { cn } from '@/lib/utils';
 import { HardHat, GraduationCap, Building2 } from 'lucide-react';
 import type { z } from 'zod';
 
+import { useTranslation } from '@/lib/i18n/use-translation';
+import { LanguageSwitcher } from '@/components/language-switcher';
+
 type RegisterStep1Form = z.infer<typeof registerStep1Schema>;
 
-const ROLES = [
-  { value: 'WORKER' as const, label: 'Worker', icon: HardHat, desc: 'Get skill credentials' },
-  { value: 'ASSESSOR' as const, label: 'Assessor', icon: GraduationCap, desc: 'ITI instructor' },
-  { value: 'EMPLOYER' as const, label: 'Employer', icon: Building2, desc: 'Verify & attest' },
-];
-
-const stateOptions = [{ value: '', label: 'Select state' }, ...INDIAN_STATES.map((s) => ({ value: s, label: s }))];
-const tradeOptions = [{ value: '', label: 'Select trade' }, ...TRADES.map((t) => ({ value: t.name, label: t.name }))];
-
 function RegisterForm() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const ROLES = [
+    { value: 'WORKER' as const, label: t('landing.ctaFooter.roles.worker.title'), icon: HardHat, desc: t('landing.ctaFooter.roles.worker.desc') },
+    { value: 'ASSESSOR' as const, label: t('landing.ctaFooter.roles.assessor.title'), icon: GraduationCap, desc: t('landing.ctaFooter.roles.assessor.desc') },
+    { value: 'EMPLOYER' as const, label: t('landing.ctaFooter.roles.employer.title'), icon: Building2, desc: t('landing.ctaFooter.roles.employer.desc') },
+  ];
+
+  const stateOptions = [{ value: '', label: t('common.next') === 'आगे' ? 'राज्य चुनें' : 'Select state' }, ...INDIAN_STATES.map((s) => ({ value: s, label: s }))];
+  const tradeOptions = [{ value: '', label: t('common.next') === 'आगे' ? 'ट्रेड चुनें' : 'Select trade' }, ...TRADES.map((t) => ({ value: t.name, label: t.name }))];
+
   const initialRole = (searchParams.get('role') as RegisterStep1Form['role']) || 'WORKER';
   const [selectedRole, setSelectedRole] = useState<RegisterStep1Form['role']>(initialRole);
 
@@ -66,15 +71,18 @@ function RegisterForm() {
 
   return (
     <Card>
-      <Link href="/" className="font-display text-xl font-bold text-saffron">
-        KaarSetu
-      </Link>
-      <h1 className="mt-6 font-display text-2xl font-bold text-cream">Create your account</h1>
-      <p className="mt-1 text-sm text-text-secondary">Step 1 of 2 — Basic information</p>
+      <div className="flex items-center justify-between">
+        <Link href="/" className="font-display text-xl font-bold text-saffron">
+          KaarSetu
+        </Link>
+        <LanguageSwitcher />
+      </div>
+      <h1 className="mt-6 font-display text-2xl font-bold text-cream">{t('auth.register.title')}</h1>
+      <p className="mt-1 text-sm text-text-secondary">{t('auth.register.subtitle')}</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
         <div>
-          <p className="mb-3 text-sm font-medium text-cream">I am a...</p>
+          <p className="mb-3 text-sm font-medium text-cream">{t('auth.register.roleLabel')}</p>
           <div className="grid gap-3 sm:grid-cols-3">
             {ROLES.map((r) => {
               const Icon = r.icon;
@@ -92,8 +100,8 @@ function RegisterForm() {
                   )}
                 >
                   <Icon className={cn('h-6 w-6', active ? 'text-saffron' : 'text-text-secondary')} />
-                  <p className="mt-2 font-display font-bold text-cream">{r.label}</p>
-                  <p className="text-xs text-text-muted">{r.desc}</p>
+                  <p className="mt-2 font-display font-bold text-cream leading-tight">{r.label}</p>
+                  <p className="mt-1 text-[10px] leading-snug text-text-muted">{r.desc}</p>
                 </button>
               );
             })}
@@ -101,21 +109,21 @@ function RegisterForm() {
           <input type="hidden" {...register('role')} />
         </div>
 
-        <Input label="Full Name" placeholder="Ramesh Yadav" {...register('name')} error={errors.name?.message} />
+        <Input label={t('auth.register.nameLabel')} placeholder="Ramesh Yadav" {...register('name')} error={errors.name?.message} />
         <Input
-          label="Phone Number"
+          label={t('auth.login.phoneLabel')}
           placeholder="9876543210"
           {...register('phone')}
           error={errors.phone?.message}
         />
         <Input
-          label="Password"
+          label={t('auth.login.passwordLabel')}
           type="password"
           {...register('password')}
           error={errors.password?.message}
         />
         <Input
-          label="Confirm Password"
+          label={t('common.next') === 'आगे' ? 'पासवर्ड कन्फर्म करें' : 'Confirm Password'}
           type="password"
           {...register('confirmPassword')}
           error={errors.confirmPassword?.message}
@@ -124,43 +132,43 @@ function RegisterForm() {
         {role === 'WORKER' && (
           <>
             <Select
-              label="Trade"
+              label={t('common.trade')}
               options={tradeOptions}
               {...register('trade')}
               error={errors.trade?.message}
             />
             <Select
-              label="State"
+              label={t('common.next') === 'आगे' ? 'राज्य' : 'State'}
               options={stateOptions}
               {...register('state')}
               error={errors.state?.message}
             />
-            <Input label="City" placeholder="Bhopal" {...register('city')} error={errors.city?.message} />
+            <Input label={t('common.next') === 'आगे' ? 'शहर' : 'City'} placeholder="Bhopal" {...register('city')} error={errors.city?.message} />
           </>
         )}
 
         {role === 'ASSESSOR' && (
           <>
             <Input
-              label="ITI Name"
+              label={t('common.next') === 'आगे' ? 'ITI का नाम' : 'ITI Name'}
               placeholder="Govt ITI Bhopal"
               {...register('itiName')}
               error={errors.itiName?.message}
             />
             <Input
-              label="ITI Code"
+              label={t('common.next') === 'आगे' ? 'ITI कोड' : 'ITI Code'}
               placeholder="MP-ITI-042"
               {...register('itiCode')}
               error={errors.itiCode?.message}
             />
             <Input
-              label="District"
+              label={t('common.next') === 'आगे' ? 'ज़िला' : 'District'}
               placeholder="Bhopal"
               {...register('district')}
               error={errors.district?.message}
             />
             <Select
-              label="State"
+              label={t('common.next') === 'आगे' ? 'राज्य' : 'State'}
               options={stateOptions}
               {...register('state')}
               error={errors.state?.message}
@@ -171,19 +179,19 @@ function RegisterForm() {
         {role === 'EMPLOYER' && (
           <>
             <Input
-              label="Company Name"
+              label={t('common.next') === 'आगे' ? 'कंपनी का नाम' : 'Company Name'}
               placeholder="Madhya Bharat Construction"
               {...register('companyName')}
               error={errors.companyName?.message}
             />
             <Input
-              label="GST Number (optional)"
+              label={t('common.next') === 'आगे' ? 'GST नंबर (वैकल्पिक)' : 'GST Number (optional)'}
               placeholder="22AAAAA0000A1Z5"
               {...register('gstNumber')}
             />
-            <Input label="City" placeholder="Bhopal" {...register('city')} error={errors.city?.message} />
+            <Input label={t('common.next') === 'आगे' ? 'शहर' : 'City'} placeholder="Bhopal" {...register('city')} error={errors.city?.message} />
             <Select
-              label="State"
+              label={t('common.next') === 'आगे' ? 'राज्य' : 'State'}
               options={stateOptions}
               {...register('state')}
               error={errors.state?.message}
@@ -192,14 +200,14 @@ function RegisterForm() {
         )}
 
         <Button type="submit" className="w-full" size="lg">
-          Continue →
+          {t('common.next')} →
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-text-secondary">
-        Already have an account?{' '}
+        {t('auth.register.hasAccount')}{' '}
         <Link href="/login" className="text-saffron hover:underline">
-          Sign in
+          {t('common.signIn')}
         </Link>
       </p>
     </Card>

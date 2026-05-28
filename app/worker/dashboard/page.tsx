@@ -13,7 +13,10 @@ import { JOB_LISTINGS } from '@/lib/jobs';
 import { nsqfLevelToNumber } from '@/lib/utils';
 import { Award, ChevronRight } from 'lucide-react';
 
+import { getServerTranslation } from '@/lib/i18n/server';
+
 export default async function WorkerDashboardPage() {
+  const { t } = getServerTranslation();
   const session = await auth();
   if (!session?.user) redirect('/login');
 
@@ -54,7 +57,9 @@ export default async function WorkerDashboardPage() {
   if (!profile) {
     return (
       <div className="space-y-4">
-        <h1 className="font-display text-2xl font-bold text-cream">Welcome, {session.user.name}</h1>
+        <h1 className="font-display text-2xl font-bold text-cream">
+          {t('worker.dashboard.welcome', { name: session.user.name ?? '' })}
+        </h1>
         <Card>
           <p className="text-text-secondary">Complete your worker profile to get started.</p>
         </Card>
@@ -86,7 +91,7 @@ export default async function WorkerDashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-2xl font-bold text-cream">
-          Namaste, {profile.user.name.split(' ')[0]} 👋
+          {t('worker.dashboard.welcome', { name: profile.user.name.split(' ')[0] ?? '' })} 👋
         </h1>
         <p className="mt-1 text-text-secondary">
           {profile.trade} • {profile.city}, {profile.state}
@@ -95,7 +100,7 @@ export default async function WorkerDashboardPage() {
 
       <div className="grid gap-6 sm:grid-cols-3">
         <Card className="text-center">
-          <StatsCounter value={credentialCount} label="Credentials" />
+          <StatsCounter value={credentialCount} label={t('nav.credentials')} />
         </Card>
         <Card className="text-center">
           <StatsCounter value={attestationCount} label="Attestations" />
@@ -111,7 +116,7 @@ export default async function WorkerDashboardPage() {
 
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold text-cream">Your Credentials</h2>
+          <h2 className="font-display text-lg font-bold text-cream">{t('worker.dashboard.earnedCredentials')}</h2>
           <Link href="/worker/credentials">
             <Button variant="ghost" size="sm">
               View all <ChevronRight className="h-4 w-4" />
@@ -157,7 +162,7 @@ export default async function WorkerDashboardPage() {
 
       {profile.assessments.length > 0 && (
         <section>
-          <h2 className="mb-4 font-display text-lg font-bold text-cream">Pending Assessments</h2>
+          <h2 className="mb-4 font-display text-lg font-bold text-cream">{t('worker.dashboard.status')}</h2>
           <div className="space-y-3">
             {profile.assessments.map((a) => (
               <Card key={a.id} className="flex items-center justify-between">

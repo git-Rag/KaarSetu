@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     const taskId = formData.get('taskId') as string;
     const taskLabel = formData.get('taskLabel') as string;
     const taskDescription = formData.get('taskDescription') as string;
+    const uiLanguage = (formData.get('uiLanguage') as 'en' | 'hi') || 'en';
 
     if (!audio) {
       return NextResponse.json({ error: 'No audio provided' }, { status: 400 });
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
       taskLabel,
       taskDescription,
       transcript,
+      uiLanguage,
     });
 
     return NextResponse.json({ 

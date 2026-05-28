@@ -11,7 +11,14 @@ interface WorkerTestModuleCardProps {
   className?: string;
 }
 
+import { useTranslation } from '@/lib/i18n/use-translation';
+
 export function WorkerTestModuleCard({ trade, className }: WorkerTestModuleCardProps) {
+  const { t } = useTranslation();
+  
+  const testTitle = t(`trades.${trade.id}.testTitle`);
+  const evidenceSuggestions = (t(`trades.${trade.id}.evidence`) as any) || trade.evidenceSuggestions;
+
   return (
     <div
       className={cn(
@@ -22,10 +29,10 @@ export function WorkerTestModuleCard({ trade, className }: WorkerTestModuleCardP
       <div className="flex items-start justify-between">
         <span className="text-3xl">{trade.icon}</span>
         <span className="rounded-full border border-teal/40 bg-teal/10 px-2 py-0.5 text-xs text-teal">
-          Pass ≥ {trade.passingScore}%
+          {t('common.next') === 'आगे' ? 'पास' : 'Pass'} ≥ {trade.passingScore}%
         </span>
       </div>
-      <h3 className="mt-3 font-display text-lg font-bold text-cream">{trade.testTitle}</h3>
+      <h3 className="mt-3 font-display text-lg font-bold text-cream">{testTitle}</h3>
       <div className="mt-2 flex flex-wrap gap-3 text-xs text-text-secondary">
         <span className="flex items-center gap-1">
           <Clock className="h-3.5 w-3.5" /> ~{trade.practicalDurationMinutes} min
@@ -35,17 +42,17 @@ export function WorkerTestModuleCard({ trade, className }: WorkerTestModuleCardP
         </span>
       </div>
       <ul className="mt-3 flex-1 space-y-1 text-xs text-text-muted">
-        {trade.evidenceSuggestions.slice(0, 2).map((s) => (
+        {Array.isArray(evidenceSuggestions) && evidenceSuggestions.slice(0, 2).map((s: string) => (
           <li key={s}>• {s}</li>
         ))}
       </ul>
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
         <Link href={`/worker/tests/${trade.id}/attempt`} className="flex-1">
-          <Button className="w-full">Start Attempt</Button>
+          <Button className="w-full">{t('worker.tests.startAttempt')}</Button>
         </Link>
         <Link href={`/worker/tests/${trade.id}`} className="flex-1">
           <Button variant="outline" className="w-full">
-            View Requirements
+            {t('worker.tests.requirements')}
           </Button>
         </Link>
       </div>

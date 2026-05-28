@@ -19,14 +19,18 @@ interface AssessmentChecklistProps {
   onChange: (value: ChecklistData) => void;
 }
 
-const RESULT_OPTIONS: { value: TaskResultValue; label: string; variant: 'teal' | 'amber' | 'red' }[] = [
-  { value: 'PASS', label: 'Pass', variant: 'teal' },
-  { value: 'PARTIAL', label: 'Partial', variant: 'amber' },
-  { value: 'FAIL', label: 'Fail', variant: 'red' },
-];
+import { useTranslation } from '@/lib/i18n/use-translation';
 
 export function AssessmentChecklist({ trade, value, onChange }: AssessmentChecklistProps) {
+  const { t } = useTranslation();
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
+
+  const RESULT_OPTIONS: { value: TaskResultValue; label: string; variant: 'teal' | 'amber' | 'red' }[] = [
+    { value: 'PASS', label: t('common.next') === 'आगे' ? 'पास' : 'Pass', variant: 'teal' },
+    { value: 'PARTIAL', label: t('common.next') === 'आगे' ? 'आंशिक' : 'Partial', variant: 'amber' },
+    { value: 'FAIL', label: t('common.next') === 'आगे' ? 'विफल' : 'Fail', variant: 'red' },
+  ];
+
   const score = calculatePracticalScore(value, trade.checklist);
   const counts = countTaskResults(value);
   const marked = counts.pass + counts.partial + counts.fail;
@@ -107,6 +111,10 @@ export function AssessmentChecklist({ trade, value, onChange }: AssessmentCheckl
         {trade.checklist.map((item, index) => {
           const entry = value[item.id];
           const result = entry?.result ?? 'FAIL';
+          
+          const localizedLabel = t(`trades.${trade.id}.tasks.${item.id}.label`);
+          const localizedDesc = t(`trades.${trade.id}.tasks.${item.id}.desc`);
+
           return (
             <li
               key={item.id}
@@ -123,8 +131,8 @@ export function AssessmentChecklist({ trade, value, onChange }: AssessmentCheckl
                     <span className="text-xs font-medium text-text-muted">Task {index + 1}</span>
                     {item.isRequired && <Badge variant="red">Required</Badge>}
                   </div>
-                  <p className="mt-1 font-medium text-cream">{item.label}</p>
-                  <p className="mt-1 text-sm text-text-secondary">{item.description}</p>
+                  <p className="mt-1 font-medium text-cream">{localizedLabel}</p>
+                  <p className="mt-1 text-sm text-text-secondary">{localizedDesc}</p>
                 </div>
                 <div className="flex shrink-0 gap-1">
                   {RESULT_OPTIONS.map((opt) => (

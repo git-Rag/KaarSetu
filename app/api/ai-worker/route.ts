@@ -10,6 +10,7 @@ const schema = z.object({
   taskLabel: z.string().min(1),
   taskDescription: z.string().min(1),
   transcript: z.string().min(1),
+  uiLanguage: z.enum(['en', 'hi']).optional().default('en'),
 });
 
 export async function GET() {
