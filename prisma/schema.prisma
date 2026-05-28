@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  WORKER
+  ASSESSOR
+  EMPLOYER
+  ADMIN
+}
+
+enum NSQFLevel {
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+  LEVEL_4
+  LEVEL_5
+}
+
+enum AssessmentStatus {
+  PENDING
+  PASSED
+  FAILED
+  MINTED
+}
+
+enum TokenStatus {
+  ACTIVE
+  REVOKED
+}
+
+model User {
+  id              String   @id @default(cuid())
+  name            String
+  phone           String   @unique
+  passwordHash    String
+  role            Role     @default(WORKER)
+  walletAddress   String   @unique
+  aadhaarVerified Boolean  @default(false)
+  aadhaarLast4    String?
+  eShramUAN       String?
+  avatarUrl       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workerProfile     WorkerProfile?
+  assessorProfile   AssessorProfile?
+  employerProfile   EmployerProfile?
+  tokens            SBToken[]
+  attestationsGiven Attestation[]    @relation("GivenBy")
+  sessionsLog       SessionLog[]
+}
+
+model WorkerProfile {
+  id          String       @id @default(cuid())
+  userId      String       @unique
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trade       String
+  state       String
+  city        String
+  bio         String?
+  photoUrl    String?
+  tokens      SBToken[]
+  assessments Assessment[]
+}
+
+model AssessorProfile {
+  id          String       @id @default(cuid())
+  userId      String       @unique
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itiName     String
+  itiCode     String
+  district    String
+  state       String
+  isApproved  Boolean      @default(false)
+  assessments Assessment[]
+}
+
+model EmployerProfile {
+  id           String        @id @default(cuid())
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName  String
+  gstNumber    String?
+  city         String
+  state        String
+  attestations Attestation[]
+}
+
+model Assessment {
+  id                String           @id @default(cuid())
+  workerProfile     WorkerProfile    @relation(fields: [workerProfileId], references: [id])
+  workerProfileId   String
+  assessorProfile   AssessorProfile  @relation(fields: [assessorProfileId], references: [id])
+  assessorProfileId String
+  trade             String
+  nsqfLevel         NSQFLevel
+  status            AssessmentStatus @default(PENDING)
+  score             Int?
+  checklistData     Json
+  evidenceUrls      String[]
+  notes             String?
+  assessedAt        DateTime?
+  token             SBToken?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model SBToken {
+  id              String        @id @default(cuid())
+  tokenId         String        @unique
+  txHash          String        @unique
+  blockNumber     Int
+  contractAddress String        @default("0x4a3eE5B3bE3DF7Aa4d3c88FAB1e9C8B2f7D6A19e")
+  workerProfile   WorkerProfile @relation(fields: [workerProfileId], references: [id])
+  workerProfileId String
+  owner           User          @relation(fields: [ownerId], references: [id])
+  ownerId         String
+  assessment      Assessment    @relation(fields: [assessmentId], references: [id])
+  assessmentId    String        @unique
+  trade           String
+  nsqfLevel       NSQFLevel
+  metadataHash    String
+  status          TokenStatus   @default(ACTIVE)
+  revokeReason    String?
+  mintedAt        DateTime      @default(now())
+  attestations    Attestation[]
+}
+
+model Attestation {
+  id                String          @id @default(cuid())
+  token             SBToken         @relation(fields: [tokenId], references: [id])
+  tokenId           String
+  givenByUser       User            @relation("GivenBy", fields: [givenByUserId], references: [id])
+  givenByUserId     String
+  employerProfile   EmployerProfile @relation(fields: [employerProfileId], references: [id])
+  employerProfileId String
+  projectName       String
+  projectDetails    String
+  durationMonths    Int
+  rating            Int
+  txHash            String          @unique
+  blockNumber       Int
+  attestedAt        DateTime        @default(now())
+}
+
+model SessionLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  ipAddress String?
+  createdAt DateTime @default(now())
+}

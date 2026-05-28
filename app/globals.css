@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #0a0a0a;
+  --bg-card: #141414;
+  --bg-raised: #1c1c1c;
+  --bg-hover: #242424;
+  --border: #2a2a2a;
+  --border-bright: #3a3a3a;
+
+  --saffron: #ff6b00;
+  --saffron-dim: #cc5500;
+  --saffron-glow: rgba(255, 107, 0, 0.15);
+
+  --teal: #00bfa5;
+  --teal-dim: #009688;
+  --teal-glow: rgba(0, 191, 165, 0.12);
+
+  --amber: #ffb300;
+  --red-err: #ef5350;
+  --indigo: #5c6bc0;
+
+  --text-primary: #f0ebe1;
+  --text-secondary: #9e9690;
+  --text-muted: #5c5750;
+  --text-inverse: #0a0a0a;
+
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+}
+
+.grid-hero {
+  background-image: linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.05;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 50%;
+  }
+  100% {
+    background-position: -200% 50%;
+  }
+}
+
+.credential-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.group:hover .credential-card::after {
+  opacity: 1;
+}
+
+.scanner-corners {
+  animation: pulse-corner 2s ease-in-out infinite;
+}
+
+@keyframes pulse-corner {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
