@@ -45,3 +45,5 @@ export interface SessionUser {
   walletAddress: string;
   phone: string;
 }
+
+export type { TaskResultValue, TaskAssessment, ChecklistData } from '@/lib/assessment-scoring';

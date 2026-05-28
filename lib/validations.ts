@@ -79,18 +79,26 @@ export const registerSchema = registerFieldsBase
   })
   .superRefine(registerRoleRefine);
 
+const taskResultSchema = z.enum(['PASS', 'PARTIAL', 'FAIL']);
+
+const taskAssessmentSchema = z.object({
+  result: taskResultSchema,
+  note: z.string().max(500).optional(),
+});
+
+export const checklistDataSchema = z.record(taskAssessmentSchema);
+
 export const assessmentCreateSchema = z.object({
   workerProfileId: z.string().min(1),
-  trade: z.string().min(1),
+  trade: z.enum(['electrician', 'plumber', 'painter'] as [string, ...string[]]),
   nsqfLevel: z.enum(['LEVEL_1', 'LEVEL_2', 'LEVEL_3', 'LEVEL_4', 'LEVEL_5']),
 });
 
 export const assessmentPatchSchema = z.object({
-  checklistData: z.record(z.boolean()).optional(),
+  checklistData: checklistDataSchema.optional(),
   evidenceUrls: z.array(z.string()).optional(),
-  notes: z.string().optional(),
+  notes: z.string().max(2000).optional(),
   status: z.enum(['PENDING', 'PASSED', 'FAILED']).optional(),
-  score: z.number().min(0).max(100).optional(),
 });
 
 export const attestationSchema = z.object({

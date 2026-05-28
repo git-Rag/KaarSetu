@@ -1,10 +1,22 @@
-import { PrismaClient, NSQFLevel } from '@prisma/client';
+import { PrismaClient, NSQFLevel, Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { TRADE_MAP } from '../lib/trades';
+import {
+  buildSeedChecklist,
+  calculatePracticalScore,
+  type TaskResultValue,
+} from '../lib/assessment-scoring';
 
 const prisma = new PrismaClient();
 
 async function hash(password: string) {
   return bcrypt.hash(password, 12);
+}
+
+function scoreFor(tradeId: string, marks: Record<string, TaskResultValue>) {
+  const trade = TRADE_MAP[tradeId];
+  const data = buildSeedChecklist(trade, marks);
+  return calculatePracticalScore(data, trade.checklist);
 }
 
 async function main() {
@@ -17,7 +29,7 @@ async function main() {
   await prisma.employerProfile.deleteMany();
   await prisma.user.deleteMany();
 
-  const admin = await prisma.user.create({
+  await prisma.user.create({
     data: {
       name: 'Arjun Sharma',
       phone: '9999000000',
@@ -51,7 +63,7 @@ async function main() {
     include: { assessorProfile: true },
   });
 
-  const assessor2User = await prisma.user.create({
+  await prisma.user.create({
     data: {
       name: 'Sunita Rao',
       phone: '9876543211',
@@ -59,7 +71,6 @@ async function main() {
       role: 'ASSESSOR',
       walletAddress: '0x8c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d',
       aadhaarVerified: true,
-      aadhaarLast4: '7832',
       assessorProfile: {
         create: {
           itiName: 'ITI Indore',
@@ -70,7 +81,6 @@ async function main() {
         },
       },
     },
-    include: { assessorProfile: true },
   });
 
   const employer1 = await prisma.user.create({
@@ -92,7 +102,7 @@ async function main() {
     include: { employerProfile: true },
   });
 
-  const employer2 = await prisma.user.create({
+  await prisma.user.create({
     data: {
       name: 'Meera Joshi',
       phone: '9876541002',
@@ -118,7 +128,6 @@ async function main() {
       role: 'WORKER',
       walletAddress: '0x7f3a2b1c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9',
       aadhaarVerified: true,
-      aadhaarLast4: '1234',
       workerProfile: {
         create: { trade: 'Electrician', state: 'Madhya Pradesh', city: 'Bhopal' },
       },
@@ -126,7 +135,7 @@ async function main() {
     include: { workerProfile: true },
   });
 
-  const priya = await prisma.user.create({
+  await prisma.user.create({
     data: {
       name: 'Priya Kumari',
       phone: '9876540002',
@@ -135,10 +144,9 @@ async function main() {
       walletAddress: '0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a',
       aadhaarVerified: true,
       workerProfile: {
-        create: { trade: 'Mason', state: 'Madhya Pradesh', city: 'Indore' },
+        create: { trade: 'Painter', state: 'Madhya Pradesh', city: 'Indore' },
       },
     },
-    include: { workerProfile: true },
   });
 
   const suresh = await prisma.user.create({
@@ -162,10 +170,10 @@ async function main() {
       phone: '9876540004',
       passwordHash: await hash('Worker@123'),
       role: 'WORKER',
-      walletAddress: '0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c',
+      walletAddress: '0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d',
       aadhaarVerified: true,
       workerProfile: {
-        create: { trade: 'Painter & Decorator', state: 'Madhya Pradesh', city: 'Bhopal' },
+        create: { trade: 'Painter', state: 'Madhya Pradesh', city: 'Bhopal' },
       },
     },
     include: { workerProfile: true },
@@ -180,43 +188,92 @@ async function main() {
       walletAddress: '0x4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d',
       aadhaarVerified: true,
       workerProfile: {
-        create: { trade: 'Welder', state: 'Madhya Pradesh', city: 'Sehore' },
+        create: { trade: 'Electrician', state: 'Madhya Pradesh', city: 'Sehore' },
       },
     },
     include: { workerProfile: true },
   });
 
   const assessor1 = assessor1User.assessorProfile!;
-  const painterChecklist: Record<string, boolean> = {
-    pt1: true, pt2: true, pt3: true, pt4: true, pt5: false,
-    pt6: true, pt7: true, pt8: true, pt9: true, pt10: true,
-  };
 
-  const anitaAssessment = await prisma.assessment.create({
+  const electricianMarks: Record<string, TaskResultValue> = {
+    e1: 'PASS',
+    e2: 'PASS',
+    e3: 'PASS',
+    e4: 'PASS',
+    e5: 'PASS',
+    e6: 'PASS',
+    e7: 'PARTIAL',
+    e8: 'PASS',
+  };
+  const electricianChecklist = buildSeedChecklist(TRADE_MAP.electrician, electricianMarks);
+  const electricianScore = scoreFor('electrician', electricianMarks);
+
+  const painterMarks: Record<string, TaskResultValue> = {
+    pt1: 'PASS',
+    pt2: 'PASS',
+    pt3: 'PASS',
+    pt4: 'PASS',
+    pt5: 'PASS',
+    pt6: 'PASS',
+    pt7: 'PASS',
+    pt8: 'PARTIAL',
+  };
+  const painterChecklist = buildSeedChecklist(TRADE_MAP.painter, painterMarks);
+  const painterScore = scoreFor('painter', painterMarks);
+
+  const plumberMarks: Record<string, TaskResultValue> = {
+    p1: 'PASS',
+    p2: 'PASS',
+    p3: 'PASS',
+    p4: 'PASS',
+    p5: 'PASS',
+    p6: 'PASS',
+    p7: 'PARTIAL',
+    p8: 'PASS',
+  };
+  const plumberChecklist = buildSeedChecklist(TRADE_MAP.plumber, plumberMarks);
+  const plumberScore = scoreFor('plumber', plumberMarks);
+
+  const kiranFailMarks: Record<string, TaskResultValue> = {
+    e1: 'PASS',
+    e2: 'PARTIAL',
+    e3: 'FAIL',
+    e4: 'FAIL',
+    e5: 'PARTIAL',
+    e6: 'FAIL',
+    e7: 'FAIL',
+    e8: 'PASS',
+  };
+  const kiranFailChecklist = buildSeedChecklist(TRADE_MAP.electrician, kiranFailMarks);
+  const kiranFailScore = scoreFor('electrician', kiranFailMarks);
+
+  await prisma.assessment.create({
     data: {
       workerProfileId: anita.workerProfile!.id,
       assessorProfileId: assessor1.id,
-      trade: 'Painter & Decorator',
+      trade: 'Painter',
       nsqfLevel: 'LEVEL_2' as NSQFLevel,
       status: 'PASSED',
-      score: 92,
-      checklistData: painterChecklist,
+      score: painterScore,
+      checklistData: painterChecklist as unknown as Prisma.InputJsonValue,
       evidenceUrls: [],
-      notes: 'Strong practical skills demonstrated. Ready for minting.',
+      notes: 'Excellent surface prep and roller technique. Ready for SBT minting.',
       assessedAt: new Date('2026-05-28'),
     },
   });
 
-  const rameshAssess1 = await prisma.assessment.create({
+  const rameshAssess = await prisma.assessment.create({
     data: {
       workerProfileId: ramesh.workerProfile!.id,
       assessorProfileId: assessor1.id,
       trade: 'Electrician',
       nsqfLevel: 'LEVEL_2',
       status: 'MINTED',
-      score: 88,
-      checklistData: { e1: true, e2: true, e3: true, e4: true, e5: true, e6: true, e7: true, e8: false, e9: true, e10: true },
+      score: electricianScore,
+      checklistData: electricianChecklist as unknown as Prisma.InputJsonValue,
       evidenceUrls: [],
+      notes: 'Solid domestic wiring practical.',
       assessedAt: new Date('2026-05-14'),
     },
   });
@@ -228,69 +285,11 @@ async function main() {
       blockNumber: 47391042,
       workerProfileId: ramesh.workerProfile!.id,
       ownerId: ramesh.id,
-      assessmentId: rameshAssess1.id,
+      assessmentId: rameshAssess.id,
       trade: 'Electrician',
       nsqfLevel: 'LEVEL_2',
       metadataHash: 'QmX7T9K2mN4pR8sV1wY3zA5bC6dE7fG8hJ9kL0mN1pQ2rS3t',
       mintedAt: new Date('2026-05-15'),
-    },
-  });
-
-  const rameshAssess2 = await prisma.assessment.create({
-    data: {
-      workerProfileId: ramesh.workerProfile!.id,
-      assessorProfileId: assessor1.id,
-      trade: 'Electrician',
-      nsqfLevel: 'LEVEL_3',
-      status: 'MINTED',
-      score: 94,
-      checklistData: { e1: true, e2: true, e3: true, e4: true, e5: true, e6: true, e7: true, e8: true, e9: true, e10: true },
-      evidenceUrls: [],
-      assessedAt: new Date('2026-05-21'),
-    },
-  });
-
-  const token1043 = await prisma.sBToken.create({
-    data: {
-      tokenId: '1043',
-      txHash: '0x8c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
-      blockNumber: 47392518,
-      workerProfileId: ramesh.workerProfile!.id,
-      ownerId: ramesh.id,
-      assessmentId: rameshAssess2.id,
-      trade: 'Electrician',
-      nsqfLevel: 'LEVEL_3',
-      metadataHash: 'QmY8U0L3nO5qS9tW2xZ4aB7cD8eF9gH0jK1lM2nP3qR4sT5u',
-      mintedAt: new Date('2026-05-22'),
-    },
-  });
-
-  const priyaAssess = await prisma.assessment.create({
-    data: {
-      workerProfileId: priya.workerProfile!.id,
-      assessorProfileId: assessor2User.assessorProfile!.id,
-      trade: 'Mason',
-      nsqfLevel: 'LEVEL_2',
-      status: 'MINTED',
-      score: 85,
-      checklistData: { m1: true, m2: true, m3: true, m4: true, m5: true, m6: true, m7: false, m8: true, m9: false, m10: true },
-      evidenceUrls: [],
-      assessedAt: new Date('2026-05-10'),
-    },
-  });
-
-  await prisma.sBToken.create({
-    data: {
-      tokenId: '1044',
-      txHash: '0x9b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a',
-      blockNumber: 47389876,
-      workerProfileId: priya.workerProfile!.id,
-      ownerId: priya.id,
-      assessmentId: priyaAssess.id,
-      trade: 'Mason',
-      nsqfLevel: 'LEVEL_2',
-      metadataHash: 'QmZ9V1M4oP6rT0uX3yA5bC7dE8fG9hI0jK2lN3oQ4rS5tU6v',
-      mintedAt: new Date('2026-05-11'),
     },
   });
 
@@ -301,14 +300,14 @@ async function main() {
       trade: 'Plumber',
       nsqfLevel: 'LEVEL_2',
       status: 'MINTED',
-      score: 90,
-      checklistData: { p1: true, p2: true, p3: true, p4: true, p5: true, p6: true, p7: true, p8: false, p9: false, p10: true },
+      score: plumberScore,
+      checklistData: plumberChecklist as unknown as Prisma.InputJsonValue,
       evidenceUrls: [],
       assessedAt: new Date('2026-05-18'),
     },
   });
 
-  const token1045 = await prisma.sBToken.create({
+  await prisma.sBToken.create({
     data: {
       tokenId: '1045',
       txHash: '0xa3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2',
@@ -323,8 +322,22 @@ async function main() {
     },
   });
 
-  const token1042 = await prisma.sBToken.findUnique({ where: { tokenId: '1042' } });
+  await prisma.assessment.create({
+    data: {
+      workerProfileId: kiran.workerProfile!.id,
+      assessorProfileId: assessor1.id,
+      trade: 'Electrician',
+      nsqfLevel: 'LEVEL_2',
+      status: 'FAILED',
+      score: kiranFailScore,
+      checklistData: kiranFailChecklist as unknown as Prisma.InputJsonValue,
+      evidenceUrls: [],
+      notes: 'Failed switchboard wiring and fault detection tasks. Recommend retraining.',
+      assessedAt: new Date('2026-05-25'),
+    },
+  });
 
+  const token1042 = await prisma.sBToken.findUnique({ where: { tokenId: '1042' } });
   if (token1042 && employer1.employerProfile) {
     await prisma.attestation.create({
       data: {
@@ -343,11 +356,10 @@ async function main() {
   }
 
   console.log('Seed complete:', {
-    admin: admin.phone,
-    assessors: [assessor1User.phone, assessor2User.phone],
-    workers: [ramesh.phone, anita.phone],
-    anitaAssessment: anitaAssessment.id,
-    tokens: ['1042', '1043', '1044', '1045'],
+    painterAnita: { score: painterScore, phone: anita.phone },
+    electricianRamesh: { token: '1042', score: electricianScore },
+    plumberSuresh: { token: '1045', score: plumberScore },
+    failedKiran: { score: kiranFailScore, phone: kiran.phone },
   });
 }
 

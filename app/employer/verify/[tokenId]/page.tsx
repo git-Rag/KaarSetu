@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { getTradeByName } from '@/lib/trades';
+import { normalizeChecklistData } from '@/lib/assessment-scoring';
 import { saveRecentVerification, markVerificationAttested } from '@/lib/recent-verifications';
 import { toast } from 'sonner';
 import type { NSQFLevel } from '@prisma/client';
@@ -30,7 +31,7 @@ interface TokenResponse {
     status: 'ACTIVE' | 'REVOKED';
     metadataHash: string;
     evidenceUrls: string[];
-    checklistData: Record<string, boolean>;
+    checklistData: Record<string, { result: string; note?: string } | boolean>;
     score: number | null;
   };
   worker: {
@@ -152,8 +153,14 @@ export default function EmployerVerifyTokenPage() {
 
   const trade = getTradeByName(data.token.trade);
   const checklist = trade?.checklist ?? [];
-  const passedCount = checklist.filter((item) => data.token.checklistData[item.id]).length;
-  const totalCount = checklist.length || 10;
+  const normalized = trade
+    ? normalizeChecklistData(data.token.checklistData, trade)
+    : {};
+  const passedCount = checklist.filter(
+    (item) =>
+      normalized[item.id]?.result === 'PASS' || normalized[item.id]?.result === 'PARTIAL'
+  ).length;
+  const totalCount = checklist.length || 8;
 
   return (
     <div className="space-y-8">
@@ -227,15 +234,21 @@ export default function EmployerVerifyTokenPage() {
           </CardTitle>
         </CardHeader>
         <ul className="space-y-2">
-          {checklist.slice(0, 10).map((item) => {
-            const passed = data.token.checklistData[item.id];
+          {checklist.map((item) => {
+            const result = normalized[item.id]?.result;
+            const passed = result === 'PASS';
+            const partial = result === 'PARTIAL';
             return (
               <li
                 key={item.id}
                 className="flex items-start gap-3 rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm"
               >
-                <span className={passed ? 'text-teal' : 'text-text-muted'}>
-                  {passed ? '✓' : '○'}
+                <span
+                  className={
+                    passed ? 'text-teal' : partial ? 'text-amber' : 'text-red-err'
+                  }
+                >
+                  {passed ? '✓' : partial ? '◐' : '✗'}
                 </span>
                 <div>
                   <p className="font-medium text-cream">{item.label}</p>

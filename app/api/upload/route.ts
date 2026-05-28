@@ -4,13 +4,9 @@ import path from 'path';
 import { nanoid } from 'nanoid';
 import { requireRole } from '@/lib/auth';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { prisma } from '@/lib/prisma';
 
-const ALLOWED_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'video/mp4',
-];
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4'];
 
 const MAX_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 5;
@@ -24,8 +20,15 @@ export async function POST(request: Request) {
     }
 
     const authCheck = await requireRole(['ASSESSOR']);
-    if (authCheck.error) {
+    if (authCheck.error || !authCheck.session) {
       return NextResponse.json({ error: authCheck.error }, { status: 401 });
+    }
+
+    const assessor = await prisma.assessorProfile.findUnique({
+      where: { userId: authCheck.session.user.id },
+    });
+    if (!assessor) {
+      return NextResponse.json({ error: 'Assessor profile not found' }, { status: 404 });
     }
 
     const formData = await request.formData();
@@ -34,9 +37,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'assessmentId required' }, { status: 400 });
     }
 
+    const assessment = await prisma.assessment.findUnique({
+      where: { id: assessmentId },
+    });
+    if (!assessment) {
+      return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
+    }
+    if (assessment.assessorProfileId !== assessor.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const existingCount = assessment.evidenceUrls.length;
     const files = formData.getAll('evidence') as File[];
-    if (files.length === 0 || files.length > MAX_FILES) {
-      return NextResponse.json({ error: `Upload 1-${MAX_FILES} files` }, { status: 400 });
+    if (files.length === 0) {
+      return NextResponse.json({ error: 'No files provided' }, { status: 400 });
+    }
+    if (existingCount + files.length > MAX_FILES) {
+      return NextResponse.json(
+        { error: `Maximum ${MAX_FILES} evidence files per assessment` },
+        { status: 400 }
+      );
     }
 
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'evidence', assessmentId);

@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/auth';
 import { assessmentPatchSchema } from '@/lib/validations';
+import {
+  calculatePracticalScore,
+  normalizeChecklistData,
+  resolveTradeForAssessment,
+  validateChecklistData,
+  isPassingScore,
+  type ChecklistData,
+} from '@/lib/assessment-scoring';
+import type { Prisma } from '@prisma/client';
 
 export async function GET(
   _request: Request,
@@ -42,7 +51,20 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ data: assessment });
+    const trade = resolveTradeForAssessment(assessment.trade);
+    const checklistData = trade
+      ? normalizeChecklistData(assessment.checklistData, trade)
+      : assessment.checklistData;
+
+    return NextResponse.json({
+      data: {
+        ...assessment,
+        checklistData,
+        score: trade
+          ? calculatePracticalScore(checklistData as ChecklistData, trade.checklist)
+          : assessment.score,
+      },
+    });
   } catch {
     return NextResponse.json({ error: 'Failed to fetch assessment' }, { status: 500 });
   }
@@ -61,7 +83,6 @@ export async function PATCH(
     const { id } = await params;
     const assessment = await prisma.assessment.findUnique({
       where: { id },
-      include: { assessorProfile: true },
     });
 
     if (!assessment) {
@@ -75,20 +96,72 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    if (assessment.status === 'MINTED') {
+      return NextResponse.json({ error: 'Cannot modify a minted assessment' }, { status: 400 });
+    }
+
     const body = await request.json();
     const parsed = assessmentPatchSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
+      return NextResponse.json(
+        { error: parsed.error.errors[0]?.message ?? 'Invalid input' },
+        { status: 400 }
+      );
     }
 
-    const updateData: Record<string, unknown> = { ...parsed.data };
-    if (parsed.data.status === 'PASSED' || parsed.data.status === 'FAILED') {
-      updateData.assessedAt = new Date();
+    const trade = resolveTradeForAssessment(assessment.trade);
+    if (!trade) {
+      return NextResponse.json({ error: 'Trade module not found' }, { status: 400 });
     }
-    if (parsed.data.status === 'FAILED') {
-      updateData.status = 'FAILED';
-    } else if (parsed.data.status === 'PASSED') {
+
+    const updateData: Record<string, unknown> = {};
+
+    if (parsed.data.evidenceUrls !== undefined) {
+      updateData.evidenceUrls = parsed.data.evidenceUrls;
+    }
+    if (parsed.data.notes !== undefined) {
+      updateData.notes = parsed.data.notes;
+    }
+
+    let checklistData: ChecklistData | undefined;
+    if (parsed.data.checklistData !== undefined) {
+      const validation = validateChecklistData(parsed.data.checklistData, trade);
+      if (!validation.valid) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
+      }
+      checklistData = parsed.data.checklistData;
+      updateData.checklistData = checklistData as unknown as Prisma.InputJsonValue;
+    } else if (assessment.checklistData) {
+      checklistData = normalizeChecklistData(assessment.checklistData, trade);
+    }
+
+    const score = checklistData
+      ? calculatePracticalScore(checklistData, trade.checklist)
+      : assessment.score ?? 0;
+    updateData.score = score;
+
+    if (parsed.data.status === 'PASSED') {
+      const fullChecklist = checklistData ?? normalizeChecklistData(assessment.checklistData, trade);
+      const requiredCheck = validateChecklistData(fullChecklist, trade, {
+        requireAllTasks: true,
+        requireRequiredMarked: true,
+      });
+      if (!requiredCheck.valid) {
+        return NextResponse.json({ error: requiredCheck.error }, { status: 400 });
+      }
+      if (!isPassingScore(score, trade)) {
+        return NextResponse.json(
+          { error: `Score ${score}% is below passing threshold of ${trade.passingScore}%` },
+          { status: 400 }
+        );
+      }
       updateData.status = 'PASSED';
+      updateData.assessedAt = new Date();
+    } else if (parsed.data.status === 'FAILED') {
+      updateData.status = 'FAILED';
+      updateData.assessedAt = new Date();
+    } else if (parsed.data.status === 'PENDING') {
+      updateData.status = 'PENDING';
     }
 
     const updated = await prisma.assessment.update({

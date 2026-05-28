@@ -3,6 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/auth';
 import { createMintResult } from '@/lib/mock-chain';
 import { CONTRACT_ADDRESS } from '@/lib/constants';
+import {
+  calculatePracticalScore,
+  normalizeChecklistData,
+  resolveTradeForAssessment,
+  isPassingScore,
+} from '@/lib/assessment-scoring';
 
 export async function POST(
   _request: Request,
@@ -19,7 +25,6 @@ export async function POST(
       where: { id },
       include: {
         workerProfile: true,
-        assessorProfile: true,
         token: true,
       },
     });
@@ -44,6 +49,28 @@ export async function POST(
 
     if (assessment.token) {
       return NextResponse.json({ error: 'Token already minted' }, { status: 409 });
+    }
+
+    const trade = resolveTradeForAssessment(assessment.trade);
+    if (!trade) {
+      return NextResponse.json({ error: 'Trade module not found' }, { status: 400 });
+    }
+
+    const checklistData = normalizeChecklistData(assessment.checklistData, trade);
+    const score = calculatePracticalScore(checklistData, trade.checklist);
+
+    if (!isPassingScore(score, trade)) {
+      return NextResponse.json(
+        { error: `Score ${score}% is below minimum ${trade.passingScore}% required to mint` },
+        { status: 400 }
+      );
+    }
+
+    if (score !== assessment.score) {
+      await prisma.assessment.update({
+        where: { id },
+        data: { score },
+      });
     }
 
     const mint = createMintResult();

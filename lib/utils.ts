@@ -38,23 +38,6 @@ export function nsqfLevelFromNumber(n: number): string {
   return `LEVEL_${n}`;
 }
 
-export function calculateChecklistScore(
-  checklist: Record<string, boolean>,
-  tradeChecklist: { id: string; isRequired: boolean }[]
-): number {
-  let totalWeight = 0;
-  let earnedWeight = 0;
-
-  for (const item of tradeChecklist) {
-    const weight = item.isRequired ? 2 : 1;
-    totalWeight += weight;
-    if (checklist[item.id]) earnedWeight += weight;
-  }
-
-  if (totalWeight === 0) return 0;
-  return Math.round((earnedWeight / totalWeight) * 100);
-}
-
 export function getBaseUrl(): string {
   if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;

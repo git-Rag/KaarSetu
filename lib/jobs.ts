@@ -85,7 +85,7 @@ export const JOB_LISTINGS: JobListing[] = [
     company: 'Madhya Bharat Construction Pvt Ltd',
     location: 'Bhopal, MP',
     wage: '₹450–550/day',
-    requiredTrade: 'Painter & Decorator',
+    requiredTrade: 'Painter',
     requiredNSQF: 2,
     postedDaysAgo: 2,
     applicants: 19,
