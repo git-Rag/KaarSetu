@@ -68,7 +68,14 @@ export function AssessorReviewChecklist({ trade, value, onChange }: AssessorRevi
             <li key={item.id} className="rounded-xl border border-border bg-surface-card p-4">
               <p className="font-medium text-cream">{item.label}</p>
               <div className="mt-2 rounded-lg bg-surface-raised p-3 text-sm">
-                <p className="text-text-muted">Worker self-report</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-text-muted">Worker self-report</p>
+                  {entry?.isVoice && (
+                    <Badge variant="saffron" className="h-5 px-1.5 text-[10px]">
+                      Voice Assisted
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-cream">
                   {entry?.workerStatus?.replace(/_/g, ' ') ?? '—'}
                   {entry?.workerNote ? ` — "${entry.workerNote}"` : ''}

@@ -125,6 +125,7 @@ const workerTaskStatusSchema = z.enum(['COMPLETED', 'NEEDS_PRACTICE', 'NOT_ATTEM
 export const workerTaskEntrySchema = z.object({
   workerStatus: workerTaskStatusSchema,
   workerNote: z.string().max(500).optional().default(''),
+  isVoice: z.boolean().optional(),
   assessorResult: taskResultSchema.nullable().optional(),
   assessorNote: z.string().max(500).optional().default(''),
 });

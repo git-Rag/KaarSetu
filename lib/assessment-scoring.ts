@@ -16,6 +16,7 @@ export type ChecklistData = Record<string, TaskAssessment>;
 export interface WorkerTaskEntry {
   workerStatus: WorkerTaskStatus;
   workerNote: string;
+  isVoice?: boolean;
   assessorResult: TaskResultValue | null;
   assessorNote: string;
 }
@@ -141,6 +142,7 @@ export function normalizeWorkerChecklistData(
           ? (ws as WorkerTaskStatus)
           : 'NOT_ATTEMPTED',
         workerNote: e.workerNote ?? '',
+        isVoice: e.isVoice ?? false,
         assessorResult: validAssessor.includes(ar as TaskResultValue | null)
           ? (ar as TaskResultValue | null)
           : null,
